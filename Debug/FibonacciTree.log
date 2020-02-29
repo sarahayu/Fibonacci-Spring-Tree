@@ -1,0 +1,9 @@
+﻿  TreeGenerator.cpp
+  Application.cpp
+e:\google drive\sarah\c++\fibonaccitree\fibonaccitree\application.cpp(40): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Generating Code...
+  Compiling...
+  FibonacciTree.cpp
+  Generating Code...
+  FibonacciTree.vcxproj -> E:\Google Drive\Sarah\C++\FibonacciTree\Debug\FibonacciTree.exe
+  FibonacciTree.vcxproj -> E:\Google Drive\Sarah\C++\FibonacciTree\Debug\FibonacciTree.pdb (Partial PDB)
