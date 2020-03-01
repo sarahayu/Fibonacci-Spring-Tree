@@ -1,14 +1,20 @@
 #pragma once
-#include "TreeSkeleton.h"
+#include <vector>
+#include <SFML\Graphics.hpp>
 
-struct GeneratorParams
-{
-	int firstRow;
-	int secondRow;
-	int iterations;
-};
+class TreeSkeleton;
 
 struct TreeGenerator
 {
-	static void generate(TreeSkeleton &tree, const GeneratorParams &params);
+	struct GeneratorParams
+	{
+		TreeSkeleton &tree;
+		float angle;
+		float angleDecreaseFactor;
+		float displacementAngle;
+		float length;
+		float lengthDecreaseFactor;
+	};
+
+	static void generate(std::vector<sf::Vector3f> &branchPositions, std::vector<int> &generation, const GeneratorParams &params);
 };

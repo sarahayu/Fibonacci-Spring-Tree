@@ -22,15 +22,21 @@ const float TreeSkeleton::getRotation() const
 	return rotation;
 }
 
+const bool TreeSkeleton::getGrowingStraight() const
+{
+	return straightGrowth;
+}
+
 std::vector<TreeSkeleton::Ptr> TreeSkeleton::getChildren()
 {
 	return children;
 }
 
-TreeSkeleton::Ptr TreeSkeleton::addChild(const float & rotation)
+TreeSkeleton::Ptr TreeSkeleton::addChild(const float & rotation, const bool & straightGrowth)
 {
 	Ptr child = std::make_shared<TreeSkeleton>(rotation);
 	child->generation = generation + 1;
+	child->straightGrowth = straightGrowth;
 	children.emplace_back(child);
 	return child;
 }
