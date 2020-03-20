@@ -4,17 +4,29 @@
 
 class TreeSkeleton;
 
+
 struct TreeGenerator
 {
 	struct GeneratorParams
 	{
-		TreeSkeleton &tree;
 		float angle;
 		float angleDecreaseFactor;
 		float displacementAngle;
 		float length;
 		float lengthDecreaseFactor;
+		float sunReach;
 	};
 
-	static void generate(std::vector<sf::Vector3f> &branchPositions, std::vector<int> &generation, const GeneratorParams &params);
+	struct Branch
+	{
+		sf::Vector3f start;
+		sf::Vector3f end;
+		sf::Vector2f rotation;
+		float length;
+		int generation;
+	};
+
+	typedef std::vector<Branch> Branches;
+
+	static void generate(TreeSkeleton &tree, Branches &branches, const GeneratorParams &params);
 };

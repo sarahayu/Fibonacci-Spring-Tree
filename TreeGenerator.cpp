@@ -1,26 +1,13 @@
 #include "TreeGenerator.h"
 #include "TreeSkeleton.h"
 #include "MathUtil.h"
+#include <iostream>
 
 namespace
 {
-	struct Branch
-	{
-		sf::Vector3f position;
-		sf::Vector2f rotation;
-	};
-
-	void insert(std::vector<sf::Vector3f> &positions, const sf::Vector3f &first, const sf::Vector3f &second)
-	{
-		positions.insert(positions.end(), {
-			first,
-			second
-		});
-	}
-
-	void addBranch(const Branch &parent, TreeSkeleton::Ptr & child, 
+	void addBranch(const TreeGenerator::Branch &parent, TreeSkeleton::Ptr & child,
 		const TreeGenerator::GeneratorParams &params,
-		std::vector<sf::Vector3f>& branchPositions, std::vector<int>& generation)
+		TreeGenerator::Branches& branches)
 	{
 		auto newParams = params;
 		newParams.angle *= params.angleDecreaseFactor;
@@ -28,44 +15,35 @@ namespace
 		
 		sf::Vector3f newBranchRelativePos = rotate(
 			rotate({
-			0.f,-newParams.length,0.f
+			0.0,newParams.length,0.0
 		}, {
 			child->getRotation(), child->getGrowingStraight() ? newParams.displacementAngle : newParams.angle
-		}), parent.rotation);
+		}), { parent.rotation.x, parent.rotation.y * (1.f - params.sunReach) });
 
-		sf::Vector3f newBranchPos = parent.position + newBranchRelativePos;
+		sf::Vector3f newBranchPos = parent.end + newBranchRelativePos;
 
 		float azimuth = std::atan2f(newBranchRelativePos.z, newBranchRelativePos.x);
-		float inclination = std::acos(
-			newBranchRelativePos.y /
-			std::sqrt(newBranchRelativePos.x*newBranchRelativePos.x
-				+ newBranchRelativePos.y*newBranchRelativePos.y 
-				+ newBranchRelativePos.z*newBranchRelativePos.z));
-		sf::Vector2f newBranchRotation = { std::atan2f(newBranchRelativePos.z, newBranchRelativePos.x),
-			PI - std::abs(inclination) };
-		
-		insert(branchPositions, parent.position, newBranchPos);
-		generation.push_back(child->getGeneration());
+		float inclination = std::acos(newBranchRelativePos.y / newParams.length);
+		sf::Vector2f newBranchRotation = { azimuth + PI,inclination };
 
-		Branch newBranch = { newBranchPos, newBranchRotation };
+		TreeGenerator::Branch newBranch = { parent.end, newBranchPos, newBranchRotation, newParams.length, child->getGeneration() };
+		branches.push_back(newBranch);
 		
 		for (auto &c : child->getChildren())
-			addBranch(newBranch, c, newParams, branchPositions, generation);
+			addBranch(newBranch, c, newParams, branches);
 	}
 
 
 }
 
-void TreeGenerator::generate(std::vector<sf::Vector3f>& branchPositions, std::vector<int>& generation, const GeneratorParams & params)
+void TreeGenerator::generate(TreeSkeleton& tree, TreeGenerator::Branches& branches, const GeneratorParams& params)
 {
-	branchPositions.clear();
-	generation.clear();
-	sf::Vector3f treeStart = { 400.f, 600.f, 0.f };
-	sf::Vector3f nextVertex = treeStart + sf::Vector3f(0.f, -params.length, 0.f);
+	branches.clear();
+	sf::Vector3f nextVertex = sf::Vector3f(0.0, params.length, 0.0);
 
-	insert(branchPositions, treeStart, nextVertex);
-	generation.push_back(1);
+	TreeGenerator::Branch first = { {}, nextVertex,{}, params.length, 1 };
+	branches.push_back(first);
 
-	for (auto &c : params.tree.getChildren())
-		addBranch({ nextVertex,{} }, c, params, branchPositions, generation);
+	for (auto &c : tree.getChildren())
+		addBranch(first, c, params, branches);
 }

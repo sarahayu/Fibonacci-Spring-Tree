@@ -35,7 +35,7 @@ std::vector<TreeSkeleton::Ptr> TreeSkeleton::getChildren()
 TreeSkeleton::Ptr TreeSkeleton::addChild(const float & rotation, const bool & straightGrowth)
 {
 	Ptr child = std::make_shared<TreeSkeleton>(rotation);
-	child->generation = generation + 1;
+	child->generation = straightGrowth ? generation + 1 : generation + 3;
 	child->straightGrowth = straightGrowth;
 	children.emplace_back(child);
 	return child;
