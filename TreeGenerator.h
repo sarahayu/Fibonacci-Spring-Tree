@@ -24,6 +24,7 @@ struct TreeGenerator
 		sf::Vector2f rotation;
 		float length;
 		int generation;
+		bool endNode;
 	};
 
 	typedef std::vector<Branch> Branches;

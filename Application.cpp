@@ -8,8 +8,9 @@
 #include <fstream>
 #include <glad\glad.h>
 #include <GLFW\glfw3.h>
-#include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 namespace
 {
@@ -42,7 +43,6 @@ namespace
 }
 
 Application::Application()
-	: m_treeVertices(sf::Lines)
 {
 	srand(time(0));
 
@@ -50,7 +50,9 @@ Application::Application()
 	ImGui::SFML::Init(m_window);
 
 	initShaders();
+	loadLeafTexture();
 	initBranchObject();
+	initLeavesObject();
 
 	auto fibs = getFibStart(m_input.fibStart);
 	SkeletonGenerator::generate(m_treeSkeleton, { fibs.first, fibs.second, m_input.iterations });
@@ -62,6 +64,7 @@ Application::Application()
 		m_input.lengthDecreaseFactor,
 		m_input.sunReach
 	});
+	saveLeafPositions();
 }
 
 void Application::run()
@@ -100,7 +103,8 @@ void Application::input()
 			break;
 		case sf::Event::Resized:
 		{			
-			unsigned int newWidth = evnt.size.width, newHeight = evnt.size.height;
+			SCR_WIDTH = evnt.size.width, SCR_HEIGHT = evnt.size.height;
+			glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		}
 		break;
 		case sf::Event::KeyReleased:
@@ -129,10 +133,12 @@ void Application::input()
 			m_input.sunReach
 		});
 
-	if (ImGui::SliderFloat("Branch taper", &m_input.branchTaper, 0.f, 0.2f))
+	if (ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.f, 0.2f))
 		initBranchObject();
 
 	ImGui::SliderFloat("Rotate", &m_input.rotate, -10.f, 10.f);
+	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f) || modified)
+		saveLeafPositions();
 
 	ImVec2 nextWindowPos = ImGui::GetWindowPos();
 	nextWindowPos.y += ImGui::GetWindowSize().y;
@@ -157,43 +163,45 @@ void Application::input()
 			m_input.lengthDecreaseFactor,
 			m_input.sunReach
 		});
+		saveLeafPositions();
 	}
 
 	ImGui::End();
 }
 
 void Application::update(float deltatime)
-{/*
-	static float elapsed = 0.f;
-	static sf::Color brown(54.f / 255, 26.f / 255, 13.f / 255);
-	elapsed += deltatime;
-	m_treeVertices.clear();
-	for (int i = 0; i < m_treeBranches.size(); i++)
-	{
-		sf::Color color = brown;
-		color.a *= 1.f - (float)m_treeBranches[i].generation / 20;
-		sf::Vector3f pos1 = rotate(m_treeBranches[i].start, { elapsed / 10, 0.f });
-		sf::Vector3f pos2 = rotate(m_treeBranches[i].end, { elapsed / 10, 0.f });
-		pos1.y = -pos1.y + 500;
-		pos2.y = -pos2.y + 500;
-		m_treeVertices.append({ sf::Vector2f( pos1.x + 400.f, pos1.y ),  color });
-		m_treeVertices.append({ sf::Vector2f( pos2.x + 400.f, pos2.y ),  color });
-	}*/
+{
 }
 
 void Application::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	float theta = m_clock.getElapsedTime().asSeconds() / 5 + m_input.rotate;
+	m_camera.pos = { -50.0f * std::cos(theta), 0.f, -50.0f * std::sin(theta) };
+	m_camera.view = glm::lookAt(m_camera.pos, { 0.f,20.f,0.f }, { 0.f,1.f,0.f });
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
+
+	glEnable(GL_CULL_FACE);
 	glUseProgram(m_treeShader.ID);
+	glUniformMatrix4fv(m_treeShader.u_view, 1, GL_FALSE, &m_camera.view[0][0]);
+	glUniformMatrix4fv(m_treeShader.u_projection, 1, GL_FALSE, &projection[0][0]);
+	glUniform3f(m_treeShader.u_cameraPos, m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
 	glBindVertexArray(m_branchDrawable.VAO);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	for (const auto &branch : m_treeBranches)
 		drawBranch(branch);
 
-	//drawBranch(m_treeBranches[0]);
-	//drawBranch(m_treeBranches[1]);
+	glDisable(GL_CULL_FACE);
+	glUseProgram(m_leafShader.ID);
+	glUniformMatrix4fv(m_leafShader.u_view, 1, GL_FALSE, &m_camera.view[0][0]);
+	glUniformMatrix4fv(m_leafShader.u_projection, 1, GL_FALSE, &projection[0][0]);
+	glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
+	glBindVertexArray(m_leavesDrawable.VAO);
+
+	for (const auto &leaf : m_leafPositions)
+		drawLeaves(leaf);
 
 	glBindVertexArray(0);
 
@@ -202,7 +210,6 @@ void Application::draw()
 	m_window.pushGLStates();
 	m_window.resetGLStates();
 
-	m_window.draw(m_treeVertices);
 	ImGui::SFML::Render();
 
 	m_window.popGLStates();
@@ -223,15 +230,15 @@ void Application::initWindowOpenGL()
 
 	if (!gladLoadGL()) exit(-1);
 
-	//glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
-	glClearColor(230.0 / 255, 230.0 / 255, 230.0 / 255, 1.0);
+	glClearColor(115.0 / 255, 194.0 / 255, 251.0 / 255, 1.0);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 }
@@ -272,21 +279,31 @@ void Application::initShaders()
 		}
 	};
 
+	auto linkShader = [&](unsigned int &ID) {
+		ID = glCreateProgram();
+		glAttachShader(ID, vert);
+		glAttachShader(ID, frag);
+		glLinkProgram(ID);
+		glGetProgramiv(ID, GL_LINK_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(ID, 512, NULL, infoLog);
+			std::cout << "\nShader linking failed!";
+		}
+		glDeleteShader(vert);
+		glDeleteShader(frag);
+	};
+
 	load(GL_VERTEX_SHADER, "shaders/tree-shader.vs", vert);
 	load(GL_FRAGMENT_SHADER, "shaders/tree-shader.fs", frag);
-
-	m_treeShader.ID = glCreateProgram();
-	glAttachShader(m_treeShader.ID, vert);
-	glAttachShader(m_treeShader.ID, frag);
-	glLinkProgram(m_treeShader.ID);
-	glGetProgramiv(m_treeShader.ID, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(m_treeShader.ID, 512, NULL, infoLog);
-		std::cout << "\nShader linking failed!";
-	}
-
+	linkShader(m_treeShader.ID);
 	std::cout << "\nTree shader successfully loaded";
+
+	load(GL_VERTEX_SHADER, "shaders/leaf-shader.vs", vert);
+	load(GL_FRAGMENT_SHADER, "shaders/leaf-shader.fs", frag);
+	linkShader(m_leafShader.ID);
+	std::cout << "\nLeaf shader successfully loaded";
+
 
 	glUseProgram(m_treeShader.ID);
 	m_treeShader.u_model = glGetUniformLocation(m_treeShader.ID, "model");
@@ -294,11 +311,33 @@ void Application::initShaders()
 	m_treeShader.u_projection = glGetUniformLocation(m_treeShader.ID, "projection");
 	m_treeShader.u_cameraPos = glGetUniformLocation(m_treeShader.ID, "cameraPos");
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
-	glUniformMatrix4fv(m_treeShader.u_projection, 1, GL_FALSE, &projection[0][0]);
+	glUseProgram(m_leafShader.ID);
+	m_leafShader.u_model = glGetUniformLocation(m_leafShader.ID, "model");
+	m_leafShader.u_view = glGetUniformLocation(m_leafShader.ID, "view");
+	m_leafShader.u_projection = glGetUniformLocation(m_leafShader.ID, "projection");
+	m_leafShader.u_cameraPos = glGetUniformLocation(m_leafShader.ID, "cameraPos");
 
-	glDeleteShader(vert);
-	glDeleteShader(frag);
+}
+
+void Application::loadLeafTexture()
+{
+	glGenTextures(1, &m_leavesDrawable.texture);
+	glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	int width, height, nrchannels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char *data = stbi_load("leaves.png", &width, &height, &nrchannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+		std::cout << "\nFailed to load texture";
+	stbi_image_free(data);
 }
 
 void Application::initBranchObject()
@@ -356,20 +395,67 @@ void Application::initBranchObject()
 	glBindVertexArray(0);
 }
 
+void Application::initLeavesObject()
+{
+	m_leavesDrawable.vertices = {
+		sf::Vector3f{ 0.5f,0.5f,0.f },
+		{ 0.5f,-0.5f,0.f },
+		{ -0.5f,-0.5f,0.f },
+		{ -0.5f,0.5f,0.f } };
+	m_leavesDrawable.indices = { 0,3,2,0,2,1 };
+
+	if (m_leavesDrawable.VAO)
+	{
+		glDeleteVertexArrays(1, &m_leavesDrawable.VAO);
+		glDeleteBuffers(1, &m_leavesDrawable.VBO);
+		glDeleteBuffers(1, &m_leavesDrawable.EBO);
+	}
+
+	glGenVertexArrays(1, &m_leavesDrawable.VAO);
+	glGenBuffers(1, &m_leavesDrawable.VBO);
+	glGenBuffers(1, &m_leavesDrawable.EBO);
+	glBindVertexArray(m_leavesDrawable.VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_leavesDrawable.VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(sf::Vector3f) * m_leavesDrawable.vertices.size(), m_leavesDrawable.vertices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_leavesDrawable.EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * m_leavesDrawable.indices.size(), m_leavesDrawable.indices.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+void Application::saveLeafPositions()
+{
+	m_leafPositions.clear();
+	for (const auto &branch : m_treeBranches)
+		if (branch.endNode)
+			m_leafPositions.push_back(branch.start + (branch.end - branch.start) / 2.f);
+}
+
 void Application::drawBranch(const TreeGenerator::Branch & branch)
 {
-	float theta = m_clock.getElapsedTime().asSeconds() / 5 + m_input.rotate;
-	glm::vec3 cameraPos = { -50.0f * std::cos(theta), 20.0f, -50.0f * std::sin(theta) };
-	glm::mat4 view = glm::lookAt(cameraPos, {0.f,20.f,0.f}, { 0.f,1.f,0.f });
-	glm::mat4 model = glm::mat4(1.0);
+	glm::mat4 model = glm::mat4(1.f);
 	model = glm::translate(model, { branch.start.x, branch.start.y, branch.start.z });
 	model = glm::rotate(model, -branch.rotation.x, { 0.f,1.f,0.f });
 	model = glm::rotate(model, branch.rotation.y, { 0.f,0.f,1.f });
 	float shrinkScale = std::pow(m_input.branchTaper + 0.8f, branch.generation);
 	model = glm::scale(model, { shrinkScale, branch.length * 1.05f, shrinkScale });
-	glUniformMatrix4fv(m_treeShader.u_view, 1, GL_FALSE, &view[0][0]);
 	glUniformMatrix4fv(m_treeShader.u_model, 1, GL_FALSE, &model[0][0]);
-	glUniform3f(m_treeShader.u_cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
 
 	glDrawElements(GL_TRIANGLES, m_branchDrawable.indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void Application::drawLeaves(const sf::Vector3f & position)
+{
+	glm::mat4 model = glm::translate(glm::mat4(1.f), { position.x,position.y,position.z });
+
+	for (int i = 0; i < 3; i++)
+	{
+		glm::mat4 modelRotated = glm::rotate(model, glm::radians(i * 30.f), { 0.f,1.f,0.f });
+		modelRotated = glm::scale(modelRotated, { m_input.leafDensity, m_input.leafDensity, m_input.leafDensity });
+		glUniformMatrix4fv(m_leafShader.u_model, 1, GL_FALSE, &modelRotated[0][0]);
+		glUniform3f(m_leafShader.u_cameraPos, m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
+		glDrawElements(GL_TRIANGLES, m_leavesDrawable.indices.size(), GL_UNSIGNED_INT, 0);
+	}
 }

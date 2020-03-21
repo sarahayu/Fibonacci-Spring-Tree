@@ -26,7 +26,9 @@ namespace
 		float inclination = std::acos(newBranchRelativePos.y / newParams.length);
 		sf::Vector2f newBranchRotation = { azimuth + PI,inclination };
 
-		TreeGenerator::Branch newBranch = { parent.end, newBranchPos, newBranchRotation, newParams.length, child->getGeneration() };
+		TreeGenerator::Branch newBranch = { 
+			parent.end, newBranchPos, newBranchRotation,
+			newParams.length, child->getGeneration(), child->getChildren().size() == 0 };
 		branches.push_back(newBranch);
 		
 		for (auto &c : child->getChildren())
@@ -41,7 +43,7 @@ void TreeGenerator::generate(TreeSkeleton& tree, TreeGenerator::Branches& branch
 	branches.clear();
 	sf::Vector3f nextVertex = sf::Vector3f(0.0, params.length, 0.0);
 
-	TreeGenerator::Branch first = { {}, nextVertex,{}, params.length, 1 };
+	TreeGenerator::Branch first = { {}, nextVertex,{}, params.length, 1, tree.getChildren().size() == 0 };
 	branches.push_back(first);
 
 	for (auto &c : tree.getChildren())
