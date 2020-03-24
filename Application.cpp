@@ -7,6 +7,7 @@
 #include <glad\glad.h>
 #include <GLFW\glfw3.h>
 #include <glm\gtc\matrix_transform.hpp>
+#include <glm\glm.hpp>
 
 namespace
 {
@@ -39,7 +40,7 @@ namespace
 }
 
 Application::Application()
-	: m_treeObject({ &m_input, &m_camera })
+	: m_treeObject({ &m_input })
 {
 	srand(time(0));
 
@@ -57,6 +58,8 @@ Application::Application()
 	m_input.branchTaper = 0.06f;
 	m_input.rotate = 0.f;
 	m_input.leafDensity = 4.6f;
+	m_input.sunAzimuth = 0.f;
+	m_input.autoRotate = false;
 
 	m_treeObject.loadResources();
 
@@ -152,6 +155,9 @@ void Application::input()
 	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f) || modified)
 		saveLeafPositions();
 
+	ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
+	ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
+
 	ImVec2 nextWindowPos = ImGui::GetWindowPos();
 	nextWindowPos.y += ImGui::GetWindowSize().y;
 
@@ -183,7 +189,8 @@ void Application::input()
 
 void Application::update(float deltatime)
 {
-	float theta = m_clock.getElapsedTime().asSeconds() / 5 + m_input.rotate;
+	float theta = m_input.rotate;
+	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 5;
 	m_camera.pos = { -50.0f * std::cos(theta), 0.f, -50.0f * std::sin(theta) };
 	m_camera.view = glm::lookAt(m_camera.pos, { 0.f,20.f,0.f }, { 0.f,1.f,0.f });
 	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
@@ -193,21 +200,22 @@ void Application::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	sf::Vector3f sunPos = { std::cos(m_input.sunAzimuth),0.7f,std::sin(m_input.sunAzimuth) };
+
 	glEnable(GL_CULL_FACE);
-	m_treeObject.prepareBranchDraw();
+	m_treeObject.prepareBranchDraw(m_camera, sunPos);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	for (const auto &branch : m_treeBranches)
 		drawBranch(branch);
 
 	glDisable(GL_CULL_FACE);
-	m_treeObject.prepareLeavesDraw();
+	m_treeObject.prepareLeavesDraw(m_camera);
 
-	for (const auto &leaf : m_leafPositions)
-		m_treeObject.drawLeaves(leaf);
+	m_treeObject.drawLeaves(m_leafPositions);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindVertexArray(0);
-
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	m_window.pushGLStates();
@@ -241,7 +249,7 @@ void Application::initWindowOpenGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
-	glClearColor(115.0 / 255, 194.0 / 255, 251.0 / 255, 1.0);
+	glClearColor(233.f / 255, 159.f / 255, 143.f / 255, 1.f);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 }

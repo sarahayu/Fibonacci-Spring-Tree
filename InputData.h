@@ -13,4 +13,6 @@ struct InputData
 	float branchTaper;
 	float rotate;
 	float leafDensity;
+	float sunAzimuth;
+	bool autoRotate;
 };

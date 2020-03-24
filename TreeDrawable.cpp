@@ -7,8 +7,6 @@
 #include "InputData.h"
 #include "Camera.h"
 #include "MathUtil.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
 TreeDrawable::TreeDrawable(const Context & context)
 {
@@ -19,24 +17,22 @@ void TreeDrawable::loadResources()
 {
 	m_shaders.loadResources();
 
-	glGenTextures(1, &m_leavesDrawable.texture);
-	glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	auto loadTexture = [&](const std::string &file) {
 
-	int width, height, nrchannels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load("leaves.png", &width, &height, &nrchannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		sf::Image image;
+		if (!image.loadFromFile(file)) throw std::runtime_error("Could not load file '" + file + "'!");
+
+		glGenTextures(1, &m_leavesDrawable.texture);
+		glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
 		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-		std::cout << "\nFailed to load texture";
-	stbi_image_free(data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	};
+
+	loadTexture("leaves.png");
 
 	m_leavesDrawable.vertices = {
 		sf::Vector3f{ 0.5f,0.5f,0.f },
@@ -66,7 +62,7 @@ void TreeDrawable::loadResources()
 	glBindVertexArray(0);
 }
 
-void TreeDrawable::prepareBranchDraw()
+void TreeDrawable::prepareBranchDraw(Camera & camera, const sf::Vector3f & lightSource)
 {
 	static float lastBranchWidth = -1.f;
 
@@ -125,15 +121,16 @@ void TreeDrawable::prepareBranchDraw()
 		glBindVertexArray(0);
 	}
 
-	m_shaders.prepareBranchDraw(*m_context.camera);
-
+	m_shaders.prepareBranchDraw(camera, lightSource);
+	
 	glBindVertexArray(m_branchDrawable.VAO);
 }
 
-void TreeDrawable::prepareLeavesDraw()
+void TreeDrawable::prepareLeavesDraw(Camera & camera)
 {
-	m_shaders.prepareLeavesDraw(*m_context.camera);
+	m_shaders.prepareLeavesDraw(camera);
 
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
 	glBindVertexArray(m_leavesDrawable.VAO);
 }
@@ -152,16 +149,27 @@ void TreeDrawable::drawBranch(const sf::Vector3f & position, const sf::Vector2f 
 	glDrawElements(GL_TRIANGLES, m_branchDrawable.indices.size(), GL_UNSIGNED_INT, 0);
 }
 
-void TreeDrawable::drawLeaves(const sf::Vector3f & position)
+void TreeDrawable::drawLeaves(const std::vector<sf::Vector3f> & positions)
 {
-	glm::mat4 model = glm::translate(glm::mat4(1.f), { position.x,position.y,position.z });
-	float density = m_context.input->leafDensity;
-
-	for (int i = 0; i < 3; i++)
+	float faceRotate = 0.f;
+	for (const auto &position : positions)
 	{
-		glm::mat4 modelRotated = glm::rotate(model, glm::radians(i * 30.f), { 0.f,1.f,0.f });
-		modelRotated = glm::scale(modelRotated, { density, density, density });
-		m_shaders.setLeavesModel(modelRotated);
-		glDrawElements(GL_TRIANGLES, m_leavesDrawable.indices.size(), GL_UNSIGNED_INT, 0);
+		//glm::mat4 model = glm::translate(glm::mat4(1.f), { position.x,position.y,position.z });
+		float density = m_context.input->leafDensity;
+
+		for (int i = 0; i < 3; i++)
+		{
+			glm::mat4 globalModel = glm::mat4(1.f);
+			globalModel = glm::translate(globalModel, { position.x,position.y,position.z });
+
+			glm::mat4 localModel = glm::mat4(1.f);
+			localModel = glm::rotate(localModel, glm::radians(i * 60.f), { 0.f,1.f,0.f });
+			localModel = glm::rotate(localModel, glm::radians(faceRotate), { 0.f,0.f,1.f });
+			localModel = glm::scale(localModel, { density, density, density });
+			m_shaders.setLeavesLocalModel(localModel);
+			m_shaders.setLeavesGlobalModel(globalModel);
+			glDrawElements(GL_TRIANGLES, m_leavesDrawable.indices.size(), GL_UNSIGNED_INT, 0);
+			faceRotate += 135.f;
+		}
 	}
 }

@@ -13,17 +13,16 @@ public:
 	struct Context
 	{
 		InputData *input;
-		Camera *camera;
 	};
 
 	TreeDrawable(const Context &context);
 
 	void loadResources();
 
-	void prepareBranchDraw();
-	void prepareLeavesDraw();
+	void prepareBranchDraw(Camera &camera, const sf::Vector3f &lightSource);
+	void prepareLeavesDraw(Camera &camera);
 	void drawBranch(const sf::Vector3f &position, const sf::Vector2f &rotation, const float &length, const int &generation);
-	void drawLeaves(const sf::Vector3f &position);
+	void drawLeaves(const std::vector<sf::Vector3f> &positions);
 private:
 	Context m_context;
 	TreeShaders m_shaders;
