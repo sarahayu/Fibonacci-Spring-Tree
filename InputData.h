@@ -14,5 +14,6 @@ struct InputData
 	float rotate;
 	float leafDensity;
 	float sunAzimuth;
+	float depthOfField;
 	bool autoRotate;
 };

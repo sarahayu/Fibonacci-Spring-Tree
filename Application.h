@@ -18,8 +18,8 @@ public:
 
 private:
 
-	void input();
-	void update(float deltatime);
+	void input(const float &deltatime);
+	void update(const float &deltatime);
 	void draw();
 
 	void initWindowOpenGL();
@@ -27,6 +27,8 @@ private:
 	void drawBranch(const TreeGenerator::Branch &branch);
 
 	int SCR_WIDTH = 1000, SCR_HEIGHT = 650;
+
+	sf::Vector3f m_focusPoint;
 
 	sf::Clock m_clock;
 	sf::RenderWindow m_window;

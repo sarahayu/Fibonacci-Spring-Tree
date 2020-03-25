@@ -6,68 +6,14 @@
 #include <sstream>
 #include <fstream>
 #include "Camera.h"
+#include "ShaderUtil.h"
 
 void TreeShaders::loadResources()
 {
-	unsigned int vert, frag;
-	int success;
-	char infoLog[512];
-
-	auto load = [&](const GLenum &shaderType, const std::string &file, unsigned int &shader) {
-		std::ifstream shaderFile;
-		shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		std::stringstream shaderStream;
-
-		try
-		{
-			shaderFile.open(file);
-			shaderStream << shaderFile.rdbuf();
-		}
-		catch (const std::ifstream::failure &failed)
-		{
-			std::cout << "\nShader file could not be read!";
-		}
-
-		std::string shaderString = shaderStream.str();
-		const char *shaderCode = shaderString.c_str();
-		const bool isVertex = shaderType == GL_VERTEX_SHADER;
-		shader = glCreateShader(shaderType);
-		glShaderSource(shader, 1, &shaderCode, NULL);
-		glCompileShader(shader);
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-		if (!success)
-		{
-			glGetShaderInfoLog(shader, 512, NULL, infoLog);
-			std::cout << "\n" << (isVertex ? "Vertex" : "Fragment") << " compilation failed! " << infoLog;
-
-		}
-	};
-
-	auto linkShader = [&](unsigned int &ID) {
-		ID = glCreateProgram();
-		glAttachShader(ID, vert);
-		glAttachShader(ID, frag);
-		glLinkProgram(ID);
-		glGetProgramiv(ID, GL_LINK_STATUS, &success);
-		if (!success)
-		{
-			glGetShaderInfoLog(ID, 512, NULL, infoLog);
-			std::cout << "\nShader linking failed!";
-		}
-		glDeleteShader(vert);
-		glDeleteShader(frag);
-	};
-
-	load(GL_VERTEX_SHADER, "shaders/tree-shader.vs", vert);
-	load(GL_FRAGMENT_SHADER, "shaders/tree-shader.fs", frag);
-	linkShader(m_treeShader.ID);
+	ShaderUtil::linkShader("shaders/tree-shader.vs", "shaders/tree-shader.fs", m_treeShader.ID);
 	std::cout << "\nTree shader successfully loaded";
-
-	load(GL_VERTEX_SHADER, "shaders/leaf-shader.vs", vert);
-	load(GL_FRAGMENT_SHADER, "shaders/leaf-shader.fs", frag);
-	linkShader(m_leafShader.ID);
+	ShaderUtil::linkShader("shaders/leaf-shader.vs", "shaders/leaf-shader.fs", m_leafShader.ID);
 	std::cout << "\nLeaf shader successfully loaded";
-
 
 	glUseProgram(m_treeShader.ID);
 	m_treeShader.u_model = glGetUniformLocation(m_treeShader.ID, "model");
