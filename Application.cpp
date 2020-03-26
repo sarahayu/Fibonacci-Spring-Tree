@@ -1,47 +1,17 @@
 #include "Application.h"
-#include "imgui\imgui.h"
-#include "imgui\imgui-SFML.h"
-#include "SkeletonGenerator.h"
-#include "TreeGenerator.h"
-#include "ShaderUtil.h"
-#include <iostream>
+#include <glm\gtc\matrix_transform.hpp>
 #include <glad\glad.h>
 #include <GLFW\glfw3.h>
-#include <glm\gtc\matrix_transform.hpp>
 #include <glm\glm.hpp>
-
-namespace
-{
-	const std::pair<int,int> getFibStart(const int &offset)
-	{
-		int first = 1, second = 1;
-		for (int i = 1; i < offset; i++)
-		{
-			int next = first + second;
-			first = second;
-			second = next;
-		}
-
-		return{first, second};
-	}
-
-	void print(TreeSkeleton::Ptr &skelly)
-	{
-		std::cout << "\n" << skelly->getGeneration() << ": " << skelly->getRotation();
-		for (auto &s : skelly->getChildren())
-			print(s);
-	}
-
-	void toString(TreeSkeleton &skeleton)
-	{
-		std::cout << "\n" << skeleton.getGeneration() << ": " << skeleton.getRotation();
-		for (auto &s : skeleton.getChildren())
-			print(s);
-	}
-}
+#include <iostream>
+#include "generators\SkeletonGenerator.h"
+#include "generators\TreeGenerator.h"
+#include "imgui\imgui.h"
+#include "imgui\imgui-SFML.h"
 
 Application::Application()
-	: m_treeObject({ &m_input })
+	: m_tree({ &m_input }),
+	m_treeRenderer({ &m_input ,&SCR_WIDTH, &SCR_HEIGHT })
 {
 	srand(time(0));
 
@@ -63,19 +33,8 @@ Application::Application()
 	m_input.depthOfField = 0.12f;
 	m_input.autoRotate = false;
 
-	m_treeObject.loadResources();
-
-	auto fibs = getFibStart(m_input.fibStart);
-	SkeletonGenerator::generate(m_treeSkeleton, { fibs.first, fibs.second, m_input.iterations });
-	TreeGenerator::generate(m_treeSkeleton, m_treeBranches, {
-		m_input.angle,
-		m_input.angleDecreaseFactor,
-		m_input.displacementAngle,
-		m_input.length,
-		m_input.lengthDecreaseFactor,
-		m_input.sunReach
-	});
-	saveLeafPositions();
+	m_treeRenderer.loadResources();
+	m_tree.createNewTree();
 }
 
 void Application::run()
@@ -98,10 +57,6 @@ void Application::run()
 		}
 		draw();
 	}
-/*
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);*/
 	glfwTerminate();
 	ImGui::SFML::Shutdown();
 }
@@ -141,21 +96,12 @@ void Application::input(const float & deltatime)
 	modified |= ImGui::SliderFloat("Branch Length Decrease", &m_input.lengthDecreaseFactor, 0.01f, 0.99f);
 	modified |= ImGui::SliderFloat("Sun Reach", &m_input.sunReach, 0.f, 0.9f);
 
-	if (modified)
-		TreeGenerator::generate(m_treeSkeleton, m_treeBranches, {
-			m_input.angle,
-			m_input.angleDecreaseFactor,
-			m_input.displacementAngle,
-			m_input.length,
-			m_input.lengthDecreaseFactor,
-			m_input.sunReach
-		});
+	if (modified) m_tree.updateExistingTree();
 
 	ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.f, 0.2f);
 
 	ImGui::SliderFloat("Rotate", &m_input.rotate, -10.f, 10.f);
-	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f) || modified)
-		saveLeafPositions();
+	ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f);
 
 	ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
 	ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
@@ -172,37 +118,9 @@ void Application::input(const float & deltatime)
 
 	ImGui::InputInt("Fibonacci Offset", &m_input.fibStart);
 	ImGui::InputInt("Fibonacci Iterations", &m_input.iterations);
-	if (ImGui::Button("Generate!"))
-	{
-		auto fibs = getFibStart(m_input.fibStart);
-		SkeletonGenerator::generate(m_treeSkeleton, { fibs.first, fibs.second, m_input.iterations });
-		TreeGenerator::generate(m_treeSkeleton, m_treeBranches, {
-			m_input.angle,
-			m_input.angleDecreaseFactor,
-			m_input.displacementAngle,
-			m_input.length,
-			m_input.lengthDecreaseFactor,
-			m_input.sunReach
-		});
-		saveLeafPositions();
-	}
+	if (ImGui::Button("Generate!")) m_tree.createNewTree();
 
 	ImGui::End();
-
-	const float speed = 3.f;
-
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-		m_focusPoint.z += deltatime * speed;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-		m_focusPoint.z -= deltatime * speed;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-		m_focusPoint.x -= deltatime * speed;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-		m_focusPoint.x += deltatime * speed;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
-		m_focusPoint.y -= deltatime * speed;
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-		m_focusPoint.y += deltatime * speed;
 }
 
 void Application::update(const float & deltatime)
@@ -218,132 +136,9 @@ void Application::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	static std::array<sf::Vector2f, 6> quadVertices = {
-		sf::Vector2f{ -1.f,1.f },
-		{ -1.f,-1.f },
-		{ 1.f,-1.f },
-		{ -1.f,1.f },
-		{ 1.f,-1.f },
-		{ 1.f,1.f }
-	};
-	static unsigned int quadVAO, quadVBO;
-	static unsigned int quadShader;
-	static unsigned int rbA1 = 0, rbA2, fboA = 0, texB = 0, fboB, rbB;
-
-	if (!fboA)
-	{
-		glGenVertexArrays(1, &quadVAO);
-		glGenBuffers(1, &quadVBO);
-		glBindVertexArray(quadVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(sf::Vector2f), quadVertices.data(), GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-		ShaderUtil::linkShader("shaders/quad-shader.vs", "shaders/quad-shader.fs", quadShader);
-		std::cout << "\nQuad shader successfully loaded!";
-
-		glGenFramebuffers(1, &fboA);
-		glBindFramebuffer(GL_FRAMEBUFFER, fboA);
-
-		glGenRenderbuffers(1, &rbA1);
-		glBindRenderbuffer(GL_RENDERBUFFER, rbA1);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbA1);
-
-		glGenRenderbuffers(1, &rbA2);
-		glBindRenderbuffer(GL_RENDERBUFFER, rbA2);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, SCR_WIDTH, SCR_HEIGHT);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbA2);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			std::cout << "\nFramebuffer not complete!";
-		}
-
-
-		glGenFramebuffers(1, &fboB);
-		glBindFramebuffer(GL_FRAMEBUFFER, fboB);
-
-		glGenTextures(1, &texB);
-		glBindTexture(GL_TEXTURE_2D, texB);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texB, 0);
-
-		glGenRenderbuffers(1, &rbB);
-		glBindRenderbuffer(GL_RENDERBUFFER, rbB);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbB);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			std::cout << "\nFramebuffer not complete!";
-		}
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-
-
 	sf::Vector3f sunPos = { std::cos(m_input.sunAzimuth),0.7f,std::sin(m_input.sunAzimuth) };
 
-	int n = 4;
-	glm::vec3 focus(0.f, 20.f, 0.f);
-
-	glm::vec3 jitterCamRight = glm::normalize(glm::cross(focus - m_camera.pos, { 0.f,1.f,0.f }));
-	glm::vec3 jitterCamUp = glm::normalize(glm::cross(focus - m_camera.pos, jitterCamRight));
-	jitterCamUp.y = -jitterCamUp.y;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, fboA);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glEnable(GL_BLEND);
-
-	for (int i = 0; i < n; i++)
-	{
-		Camera copy = m_camera;
-		copy.pos += m_input.depthOfField * (jitterCamRight * std::cos(i * 2 * PI / n) + jitterCamUp * std::sin(i * 2 * PI / n));
-		copy.view = glm::lookAt(copy.pos, focus, jitterCamUp);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, fboB);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
-		m_treeObject.prepareBranchDraw(copy, sunPos);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-		for (const auto &branch : m_treeBranches)
-			drawBranch(branch);
-
-		glDisable(GL_CULL_FACE);
-		m_treeObject.prepareLeavesDraw(copy);
-
-		m_treeObject.drawLeaves(m_leafPositions);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, fboA);
-		glBindTexture(GL_TEXTURE_2D, texB);
-		glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
-		glBlendColor(0.f, 0.f, 0.f, 1.f / n);	
-		glEnable(GL_BLEND);
-
-		glEnable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-
-		glUseProgram(quadShader);
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		glDisable(GL_BLEND);
-	}
-
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, fboA);
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-
-	glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	m_treeRenderer.draw(m_tree, m_camera, sunPos);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindVertexArray(0);
@@ -383,17 +178,4 @@ void Application::initWindowOpenGL()
 	//glClearColor(233.f / 255, 159.f / 255, 143.f / 255, 1.f);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-}
-
-void Application::saveLeafPositions()
-{
-	m_leafPositions.clear();
-	for (const auto &branch : m_treeBranches)
-		if (branch.endNode)
-			m_leafPositions.push_back(branch.start + (branch.end - branch.start) / 2.f);
-}
-
-void Application::drawBranch(const TreeGenerator::Branch & branch)
-{
-	m_treeObject.drawBranch(branch.start, branch.rotation, branch.length, branch.generation);
 }
