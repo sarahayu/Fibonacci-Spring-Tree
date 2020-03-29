@@ -4,9 +4,10 @@
 #include <array>
 #include "renderers\TreeRenderer.h"
 #include "utils\MathUtil.h"
-#include "InputData.h"
+#include "RenderSettings.h"
 #include "Camera.h"
 #include "Tree.h"
+#include "FPS.h"
 
 class Application
 {
@@ -23,12 +24,13 @@ private:
 
 	void initWindowOpenGL();
 
-	int SCR_WIDTH = 1000, SCR_HEIGHT = 650;
+	int SCR_WIDTH = 1200, SCR_HEIGHT = 650;
 
 	sf::Clock m_clock;
 	sf::RenderWindow m_window;
-	InputData m_input;
+	RenderSettings m_input;
 	Camera m_camera;
+	FPS m_fps;
 	Tree m_tree;
 	TreeRenderer m_treeRenderer;
 };

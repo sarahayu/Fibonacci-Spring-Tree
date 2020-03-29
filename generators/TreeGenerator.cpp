@@ -1,13 +1,14 @@
 #include "TreeGenerator.h"
 #include "..\TreeSkeleton.h"
 #include "..\utils\MathUtil.h"
+#include "..\RenderSettings.h"
 #include "..\Branch.h"
 #include <iostream>
 
 namespace
 {
 	void addBranch(const Branch &parent, TreeSkeleton::Ptr & child,
-		const TreeGenerator::GeneratorParams &params,
+		const RenderSettings &params,
 		TreeBranches& branches)
 	{
 		auto newParams = params;
@@ -39,7 +40,7 @@ namespace
 
 }
 
-void TreeGenerator::generate(TreeSkeleton& tree, TreeBranches& branches, const GeneratorParams& params)
+void TreeGenerator::generate(TreeSkeleton& tree, TreeBranches& branches, const RenderSettings& params)
 {
 	branches.clear();
 	sf::Vector3f nextVertex = sf::Vector3f(0.0, params.length, 0.0);

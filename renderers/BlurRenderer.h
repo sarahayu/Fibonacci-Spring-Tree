@@ -4,46 +4,45 @@
 
 class TreeComponentRenderer;
 class Tree;
-struct InputData;
+struct RenderSettings;
 struct Camera;
 
 class BlurRenderer
 {
 public:
-	struct Context
-	{
-		InputData *input;
-		int *scrWidth, *scrHeight;
-	};
 
-	struct RenderParams
-	{
-		Camera *camera;
-		sf::Vector3f lightSource;
-		float depthOfField;
-		float branchTaper;
-		float leafDensity;
-	};
+	void loadResources(const sf::Vector2i &screenDimensions);
+	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
 
-	BlurRenderer(const Context &context);
-
-	void loadResources();
-
-	void draw(TreeComponentRenderer &componentRenderer, const Tree &tree, const RenderParams &params);
+	void draw(TreeComponentRenderer &componentRenderer, const Tree &tree, const Camera &camera, const RenderSettings &settings);
 
 private:
 
-	Context m_context;
+	sf::Vector2i m_screenDimensions;
 
-	std::array<sf::Vector2f, 6> quadVertices = {
-		sf::Vector2f{ -1.f,1.f },
-		{ -1.f,-1.f },
-		{ 1.f,-1.f },
-		{ -1.f,1.f },
-		{ 1.f,-1.f },
-		{ 1.f,1.f }
-	};
-	unsigned int quadVAO, quadVBO;
+	struct {
+		std::array<sf::Vector2f, 6> vertices = {
+			sf::Vector2f{ -1.f,1.f },
+			{ -1.f,-1.f },
+			{ 1.f,-1.f },
+			{ -1.f,1.f },
+			{ 1.f,-1.f },
+			{ 1.f,1.f }
+		};
+		unsigned int VAO, VBO;
+	} m_quadDrawable;
+
 	unsigned int quadShader;
-	unsigned int rbA1 = 0, rbA2, fboA = 0, texB = 0, fboB, rbB;
+
+	struct {
+		unsigned int FBO,
+			depthRB,
+			colorRB;
+	} m_accumulationBuffer;
+
+	struct {
+		unsigned int FBO,
+			colorTex,
+			depthRB;
+	} m_textureBuffer;
 };

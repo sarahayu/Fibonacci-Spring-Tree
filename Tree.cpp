@@ -8,7 +8,7 @@
 #include "renderers\TreeRenderer.h"
 #include "utils\MathUtil.h"
 #include "TreeSkeleton.h"
-#include "InputData.h"
+#include "RenderSettings.h"
 #include "Camera.h"
 
 namespace
@@ -27,29 +27,17 @@ namespace
 	}
 }
 
-Tree::Tree(const Context & context)
-	: m_context(context)
+void Tree::createNewTree(const RenderSettings & settings)
 {
-}
-
-void Tree::createNewTree()
-{
-	auto fibs = getFibStart(m_context.input->fibStart);
-	SkeletonGenerator::generate(m_treeSkeleton, { fibs.first, fibs.second, m_context.input->iterations });
+	auto fibs = getFibStart(settings.fibStart);
+	SkeletonGenerator::generate(m_treeSkeleton, { fibs.first, fibs.second, settings.iterations });
 	
-	updateExistingTree();
+	updateExistingTree(settings);
 }
 
-void Tree::updateExistingTree()
+void Tree::updateExistingTree(const RenderSettings & settings)
 {
-	TreeGenerator::generate(m_treeSkeleton, m_treeBranches, {
-		m_context.input->angle,
-		m_context.input->angleDecreaseFactor,
-		m_context.input->displacementAngle,
-		m_context.input->length,
-		m_context.input->lengthDecreaseFactor,
-		m_context.input->sunReach
-	});
+	TreeGenerator::generate(m_treeSkeleton, m_treeBranches, settings);
 	saveLeafPositions();
 }
 

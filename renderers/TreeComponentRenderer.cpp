@@ -1,7 +1,10 @@
 #include "TreeComponentRenderer.h"
 #include <glad\glad.h>
 #include <GLFW\glfw3.h>
+#include <iostream>
 #include "..\utils\MathUtil.h"
+#include "..\RenderSettings.h"
+#include "..\Branch.h"
 
 void TreeComponentRenderer::loadResources()
 {
@@ -52,14 +55,15 @@ void TreeComponentRenderer::loadResources()
 	glBindVertexArray(0);
 }
 
-void TreeComponentRenderer::prepareBranchDraw(Camera & camera, const sf::Vector3f & lightSource, const float &taper)
+void TreeComponentRenderer::drawBranches(const TreeBranches &branches, const Camera & camera, const RenderSettings & settings)
 {
-	if (m_settings.branchTaper != taper)
+	static float taper = -1.f;
+	if (taper != settings.branchTaper + 0.8f)
 	{
-		m_settings.branchTaper = taper;
+		taper = settings.branchTaper + 0.8f;
 		const float PI2 = 3.14159265f * 2;
 		int offset = 0;
-		float yNormalAngle = std::atanf(1 - m_settings.branchTaper);
+		float yNormalAngle = std::atanf(1 - taper);
 
 		for (int i = 0; i < CYLINDER_FACE_VERT_COUNT; i++)
 		{
@@ -109,43 +113,46 @@ void TreeComponentRenderer::prepareBranchDraw(Camera & camera, const sf::Vector3
 		glBindVertexArray(0);
 	}
 
-	m_shaders.prepareBranchDraw(camera, lightSource);
+	Camera copy = camera;
+	sf::Vector3f lightSource = { std::cos(settings.sunAzimuth),0.7f,std::sin(settings.sunAzimuth) };
+	m_shaders.prepareBranchDraw(copy, lightSource);
 
 	glBindVertexArray(m_branchDrawable.VAO);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+
+	for (const Branch &branch : branches)
+	{
+		glm::mat4 model = glm::mat4(1.f);
+		model = glm::translate(model, { branch.start.x,  branch.start.y,  branch.start.z });
+		model = glm::rotate(model, -branch.rotation.x, { 0.f,1.f,0.f });
+		model = glm::rotate(model, branch.rotation.y, { 0.f,0.f,1.f });
+		float shrinkScale = std::pow(taper, branch.generation);
+		model = glm::scale(model, { shrinkScale,  branch.length * 1.05f, shrinkScale });
+
+		m_shaders.setBranchModel(model);
+
+		glDrawElements(GL_TRIANGLES, m_branchDrawable.indices.size(), GL_UNSIGNED_INT, 0);
+	}
 }
 
-void TreeComponentRenderer::prepareLeavesDraw(Camera & camera, const float & elapsed, const float & leafDensity)
+void TreeComponentRenderer::drawLeaves(const std::vector<sf::Vector3f>& positions, const Camera & camera, const RenderSettings &settings)
 {
-	m_settings.leafDensity = leafDensity;
-
-	m_shaders.prepareLeavesDraw(camera);
-	m_shaders.setLeavesTime(elapsed);
+	static sf::Clock clock;
+	Camera copy = camera;
+	m_shaders.prepareLeavesDraw(copy);
+	m_shaders.setLeavesTime(clock.getElapsedTime().asSeconds());
 
 	glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
 	glBindVertexArray(m_leavesDrawable.VAO);
-}
+	glDisable(GL_CULL_FACE);
 
-void TreeComponentRenderer::drawBranch(const sf::Vector3f & position, const sf::Vector2f & rotation, const float & length, const int & generation)
-{
-	glm::mat4 model = glm::mat4(1.f);
-	model = glm::translate(model, { position.x, position.y, position.z });
-	model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
-	model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
-	float shrinkScale = std::pow(m_settings.branchTaper, generation);
-	model = glm::scale(model, { shrinkScale, length * 1.05f, shrinkScale });
-
-	m_shaders.setBranchModel(model);
-
-	glDrawElements(GL_TRIANGLES, m_branchDrawable.indices.size(), GL_UNSIGNED_INT, 0);
-}
-
-void TreeComponentRenderer::drawLeaves(const std::vector<sf::Vector3f>& positions)
-{
 	float faceRotate = 0.f;
 	for (const auto &position : positions)
 	{
 		//glm::mat4 model = glm::translate(glm::mat4(1.f), { position.x,position.y,position.z });
-		float density = m_settings.leafDensity;
+		float density = settings.leafDensity;
 
 		for (int i = 0; i < 3; i++)
 		{

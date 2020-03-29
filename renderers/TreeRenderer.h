@@ -2,28 +2,19 @@
 #include "TreeComponentRenderer.h"
 #include "BlurRenderer.h"
 
-struct InputData;
+struct RenderSettings;
 struct Camera;
 class Tree;
 
 class TreeRenderer
 {
 public:
-	struct Context
-	{
-		InputData *input;
-		int *scrWidth, *scrHeight;
-	};
+	void loadResources(const sf::Vector2i &screenDimensions);
+	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
 
-	TreeRenderer(const Context &context);
-
-	void loadResources();
-
-	void draw(const Tree &tree, Camera &camera, const sf::Vector3f &lightSource);
+	void draw(const Tree &tree, Camera &camera, const RenderSettings &settings);
 
 private:
-	Context m_context;
-
 	TreeComponentRenderer m_componentRenderer;
 	BlurRenderer m_blurRenderer;
 

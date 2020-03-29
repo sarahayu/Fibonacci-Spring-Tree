@@ -5,28 +5,19 @@
 
 class TreeRenderer;
 struct Camera;
-struct InputData;
+struct RenderSettings;
 
 class Tree
 {
 public:
-	struct Context
-	{
-		InputData *input;
-	};
-
-	Tree(const Context &context);
-
-	void createNewTree();
-	void updateExistingTree();
+	void createNewTree(const RenderSettings &settings);
+	void updateExistingTree(const RenderSettings &settings);
 
 	const TreeBranches& getBranches() const;
 	const std::vector<sf::Vector3f>& getLeaves() const;
 
 private:
 	void saveLeafPositions();
-
-	Context m_context;
 
 	TreeSkeleton m_treeSkeleton;
 	TreeBranches m_treeBranches;

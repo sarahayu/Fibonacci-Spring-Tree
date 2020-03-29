@@ -1,6 +1,6 @@
 #pragma once
 
-struct InputData
+struct RenderSettings
 {
 	int fibStart;
 	int iterations;

@@ -2,26 +2,22 @@
 #include <SFML\Graphics.hpp>
 #include <array>
 #include "TreeShaders.h"
+#include "..\Camera.h"
 
+struct Branch;
 struct Camera;
+typedef std::vector<Branch> TreeBranches;
+struct RenderSettings;
 
 class TreeComponentRenderer
 {
 public:
 	void loadResources();
-
-	void prepareBranchDraw(Camera &camera, const sf::Vector3f &lightSource, const float &taper);
-	void prepareLeavesDraw(Camera & camera, const float &elapsed, const float &leafDensity);
-	void drawBranch(const sf::Vector3f &position, const sf::Vector2f &rotation, const float &length, const int &generation);
-	void drawLeaves(const std::vector<sf::Vector3f> &positions);
+	void drawBranches(const TreeBranches &branches, const Camera &camera, const RenderSettings& params);
+	void drawLeaves(const std::vector<sf::Vector3f> &positions, const Camera &camera, const RenderSettings &params);
 
 private:
 	TreeShaders m_shaders;
-
-	struct {
-		float branchTaper = -1.f;
-		float leafDensity;
-	} m_settings;
 
 	const static int CYLINDER_FACE_VERT_COUNT = 5;
 

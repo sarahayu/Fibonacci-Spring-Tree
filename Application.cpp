@@ -10,8 +10,6 @@
 #include "imgui\imgui-SFML.h"
 
 Application::Application()
-	: m_tree({ &m_input }),
-	m_treeRenderer({ &m_input ,&SCR_WIDTH, &SCR_HEIGHT })
 {
 	srand(time(0));
 
@@ -33,8 +31,8 @@ Application::Application()
 	m_input.depthOfField = 0.12f;
 	m_input.autoRotate = false;
 
-	m_treeRenderer.loadResources();
-	m_tree.createNewTree();
+	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
+	m_tree.createNewTree(m_input);
 }
 
 void Application::run()
@@ -48,6 +46,7 @@ void Application::run()
 		const float dt = clock.restart().asSeconds();
 		accumDT += dt;
 
+		m_fps.update(dt);
 		ImGui::SFML::Update(m_window, sf::seconds(dt));
 		input(dt);
 		while (accumDT >= 1.f / 60)
@@ -76,8 +75,10 @@ void Application::input(const float & deltatime)
 			break;
 		case sf::Event::Resized:
 		{			
-			SCR_WIDTH = evnt.size.width, SCR_HEIGHT = evnt.size.height;
+			SCR_WIDTH = evnt.size.width;
+			SCR_HEIGHT = evnt.size.height;
 			glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+			m_treeRenderer.reloadFramebuffers({ SCR_WIDTH, SCR_HEIGHT });
 		}
 		break;
 		case sf::Event::KeyReleased:
@@ -96,7 +97,7 @@ void Application::input(const float & deltatime)
 	modified |= ImGui::SliderFloat("Branch Length Decrease", &m_input.lengthDecreaseFactor, 0.01f, 0.99f);
 	modified |= ImGui::SliderFloat("Sun Reach", &m_input.sunReach, 0.f, 0.9f);
 
-	if (modified) m_tree.updateExistingTree();
+	if (modified) m_tree.updateExistingTree(m_input);
 
 	ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.f, 0.2f);
 
@@ -118,7 +119,7 @@ void Application::input(const float & deltatime)
 
 	ImGui::InputInt("Fibonacci Offset", &m_input.fibStart);
 	ImGui::InputInt("Fibonacci Iterations", &m_input.iterations);
-	if (ImGui::Button("Generate!")) m_tree.createNewTree();
+	if (ImGui::Button("Generate!")) m_tree.createNewTree(m_input);
 
 	ImGui::End();
 }
@@ -130,15 +131,15 @@ void Application::update(const float & deltatime)
 	m_camera.pos = { -50.0f * std::cos(theta), 0.f, -50.0f * std::sin(theta) };
 	m_camera.view = glm::lookAt(m_camera.pos, { 0.f,20.f,0.f }, { 0.f,1.f,0.f });
 	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
+	m_camera.projection = glm::translate(m_camera.projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
+
 }
 
 void Application::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	sf::Vector3f sunPos = { std::cos(m_input.sunAzimuth),0.7f,std::sin(m_input.sunAzimuth) };
-
-	m_treeRenderer.draw(m_tree, m_camera, sunPos);
+	m_treeRenderer.draw(m_tree, m_camera, m_input);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindVertexArray(0);
@@ -147,6 +148,7 @@ void Application::draw()
 	m_window.pushGLStates();
 	m_window.resetGLStates();
 
+	m_fps.draw(m_window);
 	ImGui::SFML::Render();
 
 	m_window.popGLStates();
