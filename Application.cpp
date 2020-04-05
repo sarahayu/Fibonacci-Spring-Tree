@@ -17,14 +17,14 @@ Application::Application()
 	ImGui::SFML::Init(m_window);
 
 	m_input.fibStart = 1;
-	m_input.iterations = 9;
+	m_input.iterations = 12;
 	m_input.angle = 0.94f;
 	m_input.angleDecreaseFactor = 0.97f;
 	m_input.displacementAngle = 0.26f;
 	m_input.length = 3.7f;
 	m_input.lengthDecreaseFactor = 0.97f;
 	m_input.sunReach = 0.15f;
-	m_input.branchTaper = 0.06f;
+	m_input.branchTaper = 0.86f;
 	m_input.rotate = 0.f;
 	m_input.leafDensity = 4.6f;
 	m_input.sunAzimuth = 0.f;
@@ -33,6 +33,7 @@ Application::Application()
 
 	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
 	m_tree.createNewTree(m_input);
+	m_treeRenderer.createDrawable(m_tree, m_input);
 }
 
 void Application::run()
@@ -97,12 +98,18 @@ void Application::input(const float & deltatime)
 	modified |= ImGui::SliderFloat("Branch Length Decrease", &m_input.lengthDecreaseFactor, 0.01f, 0.99f);
 	modified |= ImGui::SliderFloat("Sun Reach", &m_input.sunReach, 0.f, 0.9f);
 
-	if (modified) m_tree.updateExistingTree(m_input);
+	if (modified)
+		m_tree.updateExistingTree(m_input);
 
-	ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.f, 0.2f);
+	if (ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.8f, 1.f)
+		|| modified)
+		m_treeRenderer.updateBranchesDrawable(m_tree, m_input);
 
 	ImGui::SliderFloat("Rotate", &m_input.rotate, -10.f, 10.f);
-	ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f);
+
+	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f)
+		|| modified)
+		m_treeRenderer.updateLeavesDrawable(m_tree, m_input);
 
 	ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
 	ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
@@ -119,7 +126,11 @@ void Application::input(const float & deltatime)
 
 	ImGui::InputInt("Fibonacci Offset", &m_input.fibStart);
 	ImGui::InputInt("Fibonacci Iterations", &m_input.iterations);
-	if (ImGui::Button("Generate!")) m_tree.createNewTree(m_input);
+	if (ImGui::Button("Generate!"))
+	{
+		m_tree.createNewTree(m_input);
+		m_treeRenderer.createDrawable(m_tree, m_input);
+	}
 
 	ImGui::End();
 }
@@ -139,8 +150,10 @@ void Application::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	m_treeRenderer.draw(m_tree, m_camera, m_input);
+	m_treeRenderer.draw(m_camera, m_input);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindVertexArray(0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

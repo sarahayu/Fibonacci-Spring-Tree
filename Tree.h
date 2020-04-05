@@ -22,4 +22,6 @@ private:
 	TreeSkeleton m_treeSkeleton;
 	TreeBranches m_treeBranches;
 	std::vector<sf::Vector3f> m_leafPositions;
+
+
 };

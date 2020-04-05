@@ -12,6 +12,7 @@
 #include "..\Camera.h"
 #include "..\Tree.h"
 #include "TreeComponentRenderer.h"
+#include "Mesh.h"
 
 void BlurRenderer::loadResources(const sf::Vector2i & screenDimensions)
 {
@@ -81,11 +82,11 @@ void BlurRenderer::reloadFramebuffers(const sf::Vector2i & screenDimensions)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void BlurRenderer::draw(TreeComponentRenderer & componentRenderer, const Tree & tree, const Camera & camera, const RenderSettings & settings)
+void BlurRenderer::draw(TreeComponentRenderer & componentRenderer, const TreeMesh & treeMesh, const Camera & camera, const RenderSettings & settings)
 {
 	static sf::Clock clock;
 	float elapsed = clock.getElapsedTime().asSeconds();
-	int n = 1;
+	int n = 4;
 	glm::vec3 focus(0.f, 20.f, 0.f);
 
 	glm::vec3 jitterCamRight = glm::normalize(glm::cross(focus - camera.pos, { 0.f,1.f,0.f }));
@@ -98,21 +99,19 @@ void BlurRenderer::draw(TreeComponentRenderer & componentRenderer, const Tree & 
 	for (int i = 0; i < n; i++)
 	{
 		Camera jitterCam = camera;
-		//jitterCam.pos += settings.depthOfField * (jitterCamRight * std::cos(i * 2 * PI / n) + jitterCamUp * std::sin(i * 2 * PI / n));
+		jitterCam.pos += settings.depthOfField * (jitterCamRight * std::cos(i * 2 * PI / n) + jitterCamUp * std::sin(i * 2 * PI / n));
 		jitterCam.view = glm::lookAt(jitterCam.pos, focus, jitterCamUp);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, m_textureBuffer.FBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glDisable(GL_BLEND);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		componentRenderer.drawBranches(tree.getBranches(), jitterCam, settings);
-		componentRenderer.drawLeaves(tree.getLeaves(), jitterCam, settings);
+		componentRenderer.drawTree(treeMesh, jitterCam, settings);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, m_accumulationBuffer.FBO);
 		glBindTexture(GL_TEXTURE_2D, m_textureBuffer.colorTex);
-
+		
 		glEnable(GL_BLEND);
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);

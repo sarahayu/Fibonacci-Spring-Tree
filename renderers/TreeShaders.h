@@ -3,36 +3,34 @@
 #include <SFML\Graphics.hpp>
 
 struct Camera;
+struct RenderSettings;
 
 class TreeShaders
 {
 public:
 	void loadResources();
 
-	void prepareBranchDraw(Camera &camera, const sf::Vector3f &lightSource);
-	void prepareLeavesDraw(Camera &camera);
+	void prepareBranchDraw(const Camera &camera, const sf::Vector3f &lightSource);
+	void prepareLeavesDraw(const Camera &camera, const float &leafSize);
 
 	void setBranchModel(const glm::mat4 &model);
-	void setLeavesLocalModel(const glm::mat4 &local);
-	void setLeavesGlobalModel(const glm::mat4 &global);
+	void setLeavesModel(const glm::mat4 &model);
 	void setLeavesTime(const float &elapsed);
 private:
 
 	struct {
 		unsigned int ID;
 		int u_model;
-		int u_view;
-		int u_projection;
+		int u_projView;
 		int u_cameraPos;
 		int u_lightSource;
 	} m_treeShader;
 
 	struct {
 		unsigned int ID;
-		int u_localModel;
-		int u_globalModel;
-		int u_view;
-		int u_projection;
+		int u_model;
+		int u_projView;
 		int u_time;
+		int u_leafSize;
 	} m_leafShader;
 };

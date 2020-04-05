@@ -5,6 +5,7 @@
 #include "..\utils\MathUtil.h"
 #include "..\RenderSettings.h"
 #include "..\Branch.h"
+#include "Mesh.h"
 
 void TreeComponentRenderer::loadResources()
 {
@@ -15,8 +16,8 @@ void TreeComponentRenderer::loadResources()
 		sf::Image image;
 		if (!image.loadFromFile(file)) throw std::runtime_error("Could not load file '" + file + "'!");
 
-		glGenTextures(1, &m_leavesDrawable.texture);
-		glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
+		glGenTextures(1, &m_leavesTexture);
+		glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -27,146 +28,28 @@ void TreeComponentRenderer::loadResources()
 
 	loadTexture("resources/leaves.png");
 
-	m_leavesDrawable.vertices = {
-		sf::Vector3f{ 0.5f,0.5f,0.f },
-		{ 0.5f,-0.5f,0.f },
-		{ -0.5f,-0.5f,0.f },
-		{ -0.5f,0.5f,0.f } };
-	m_leavesDrawable.indices = { 0,3,2,0,2,1 };
-
-	if (m_leavesDrawable.VAO)
-	{
-		glDeleteVertexArrays(1, &m_leavesDrawable.VAO);
-		glDeleteBuffers(1, &m_leavesDrawable.VBO);
-		glDeleteBuffers(1, &m_leavesDrawable.EBO);
-	}
-
-	glGenVertexArrays(1, &m_leavesDrawable.VAO);
-	glGenBuffers(1, &m_leavesDrawable.VBO);
-	glGenBuffers(1, &m_leavesDrawable.EBO);
-	glBindVertexArray(m_leavesDrawable.VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_leavesDrawable.VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(sf::Vector3f) * m_leavesDrawable.vertices.size(), m_leavesDrawable.vertices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_leavesDrawable.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * m_leavesDrawable.indices.size(), m_leavesDrawable.indices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }
 
-void TreeComponentRenderer::drawBranches(const TreeBranches &branches, const Camera & camera, const RenderSettings & settings)
+void TreeComponentRenderer::drawTree(const TreeMesh & mesh, const Camera & camera, const RenderSettings & settings)
 {
-	static float taper = -1.f;
-	if (taper != settings.branchTaper + 0.8f)
-	{
-		taper = settings.branchTaper + 0.8f;
-		const float PI2 = 3.14159265f * 2;
-		int offset = 0;
-		float yNormalAngle = std::atanf(1 - taper);
-
-		for (int i = 0; i < CYLINDER_FACE_VERT_COUNT; i++)
-		{
-			int offset2 = offset++;
-			float x = std::cos(PI2 / CYLINDER_FACE_VERT_COUNT * i),
-				z = std::sin(PI2 / CYLINDER_FACE_VERT_COUNT * i);
-			m_branchDrawable.vertices[offset2 * 2] = { x, 0.f, z };
-			m_branchDrawable.vertices[offset2 * 2 + CYLINDER_FACE_VERT_COUNT * 2] = { x * taper, 1.f, z * taper };
-			m_branchDrawable.vertices[offset2 * 2 + 1] = rotate({ x,0.f,z }, { 0.f, yNormalAngle });
-			m_branchDrawable.vertices[offset2 * 2 + CYLINDER_FACE_VERT_COUNT * 2 + 1] = rotate({ x,0.f,z }, { 0.f, yNormalAngle });
-		}
-
-		offset = 0;
-		for (int i = 0; i < CYLINDER_FACE_VERT_COUNT; i++)
-		{
-			bool last = i == CYLINDER_FACE_VERT_COUNT - 1;
-
-			m_branchDrawable.indices[offset++] = i;
-			m_branchDrawable.indices[offset++] = i + CYLINDER_FACE_VERT_COUNT;
-			m_branchDrawable.indices[offset++] = last ? CYLINDER_FACE_VERT_COUNT : i + CYLINDER_FACE_VERT_COUNT + 1;
-
-			m_branchDrawable.indices[offset++] = i;
-			m_branchDrawable.indices[offset++] = last ? CYLINDER_FACE_VERT_COUNT : i + CYLINDER_FACE_VERT_COUNT + 1;
-			m_branchDrawable.indices[offset++] = last ? 0 : i + 1;
-		}
-
-		if (m_branchDrawable.VAO)
-		{
-			glDeleteVertexArrays(1, &m_branchDrawable.VAO);
-			glDeleteBuffers(1, &m_branchDrawable.VBO);
-			glDeleteBuffers(1, &m_branchDrawable.EBO);
-		}
-
-		glGenVertexArrays(1, &m_branchDrawable.VAO);
-		glGenBuffers(1, &m_branchDrawable.VBO);
-		glGenBuffers(1, &m_branchDrawable.EBO);
-		glBindVertexArray(m_branchDrawable.VAO);
-		glBindBuffer(GL_ARRAY_BUFFER, m_branchDrawable.VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(sf::Vector3f) * m_branchDrawable.vertices.size(), m_branchDrawable.vertices.data(), GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_branchDrawable.EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * m_branchDrawable.indices.size(), m_branchDrawable.indices.data(), GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(sf::Vector3f), (void*)0);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(sf::Vector3f), (void*)(sizeof(sf::Vector3f)));
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
-
-	Camera copy = camera;
 	sf::Vector3f lightSource = { std::cos(settings.sunAzimuth),0.7f,std::sin(settings.sunAzimuth) };
-	m_shaders.prepareBranchDraw(copy, lightSource);
+	m_shaders.prepareBranchDraw(camera, lightSource);
+	m_shaders.setBranchModel(glm::mat4(1.f));
 
-	glBindVertexArray(m_branchDrawable.VAO);
+	glBindVertexArray(mesh.branches.VAO);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	for (const Branch &branch : branches)
-	{
-		glm::mat4 model = glm::mat4(1.f);
-		model = glm::translate(model, { branch.start.x,  branch.start.y,  branch.start.z });
-		model = glm::rotate(model, -branch.rotation.x, { 0.f,1.f,0.f });
-		model = glm::rotate(model, branch.rotation.y, { 0.f,0.f,1.f });
-		float shrinkScale = std::pow(taper, branch.generation);
-		model = glm::scale(model, { shrinkScale,  branch.length * 1.05f, shrinkScale });
+	glDrawElements(GL_TRIANGLES, mesh.branches.indices.size(), GL_UNSIGNED_INT, 0);
 
-		m_shaders.setBranchModel(model);
-
-		glDrawElements(GL_TRIANGLES, m_branchDrawable.indices.size(), GL_UNSIGNED_INT, 0);
-	}
-}
-
-void TreeComponentRenderer::drawLeaves(const std::vector<sf::Vector3f>& positions, const Camera & camera, const RenderSettings &settings)
-{
 	static sf::Clock clock;
-	Camera copy = camera;
-	m_shaders.prepareLeavesDraw(copy);
+	m_shaders.prepareLeavesDraw(camera, settings.leafDensity);
 	m_shaders.setLeavesTime(clock.getElapsedTime().asSeconds());
+	m_shaders.setLeavesModel(glm::mat4(1.f));
 
-	glBindTexture(GL_TEXTURE_2D, m_leavesDrawable.texture);
-	glBindVertexArray(m_leavesDrawable.VAO);
+	glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
+	glBindVertexArray(mesh.leaves.VAO);
 	glDisable(GL_CULL_FACE);
-
-	float faceRotate = 0.f;
-	for (const auto &position : positions)
-	{
-		//glm::mat4 model = glm::translate(glm::mat4(1.f), { position.x,position.y,position.z });
-		float density = settings.leafDensity;
-
-		for (int i = 0; i < 3; i++)
-		{
-			glm::mat4 globalModel = glm::mat4(1.f);
-			globalModel = glm::translate(globalModel, { position.x,position.y,position.z });
-
-			glm::mat4 localModel = glm::mat4(1.f);
-			localModel = glm::rotate(localModel, glm::radians(i * 60.f), { 0.f,1.f,0.f });
-			localModel = glm::rotate(localModel, glm::radians(faceRotate), { 0.f,0.f,1.f });
-			localModel = glm::scale(localModel, { density, density, density });
-			m_shaders.setLeavesLocalModel(localModel);
-			m_shaders.setLeavesGlobalModel(globalModel);
-			glDrawElements(GL_TRIANGLES, m_leavesDrawable.indices.size(), GL_UNSIGNED_INT, 0);
-			faceRotate += 135.f;
-		}
-	}
+	glDrawElements(GL_TRIANGLES, mesh.leaves.indices.size(), GL_UNSIGNED_INT, 0);
 }

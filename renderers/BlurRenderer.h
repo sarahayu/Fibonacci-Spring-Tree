@@ -3,7 +3,7 @@
 #include <array>
 
 class TreeComponentRenderer;
-class Tree;
+struct TreeMesh;
 struct RenderSettings;
 struct Camera;
 
@@ -14,7 +14,7 @@ public:
 	void loadResources(const sf::Vector2i &screenDimensions);
 	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
 
-	void draw(TreeComponentRenderer &componentRenderer, const Tree &tree, const Camera &camera, const RenderSettings &settings);
+	void draw(TreeComponentRenderer &componentRenderer, const TreeMesh &treeMesh, const Camera &camera, const RenderSettings &settings);
 
 private:
 

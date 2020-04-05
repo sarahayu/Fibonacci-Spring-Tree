@@ -1,4 +1,5 @@
 #include "FPS.h"
+#include <iostream>
 
 FPS::FPS()
 {
@@ -17,6 +18,7 @@ void FPS::update(const float & deltaTime)
 	if (elapsed >= 0.5f)
 	{
 		lastFPS = frames / elapsed;
+		std::cout << "\n" << lastFPS;
 
 		elapsed -= 0.5f;
 		frames = 0;
