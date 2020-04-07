@@ -50,10 +50,12 @@ void TreeRenderer::updateLeavesDrawable(const Tree & tree, const RenderSettings 
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * leaves.indices.size(), leaves.indices.data(), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, texCoord)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, normal)));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, yCenter)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, texCoord)));
 	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, yCenter)));
+	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
@@ -87,7 +89,7 @@ void TreeRenderer::updateBranchesDrawable(const Tree & tree, const RenderSetting
 	glBindVertexArray(0);
 }
 
-void TreeRenderer::draw(Camera & camera, const RenderSettings & settings)
+void TreeRenderer::draw(const Camera & camera, const RenderSettings & settings)
 {
 	m_blurRenderer.draw(m_componentRenderer, m_mesh, camera, settings);
 }

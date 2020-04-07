@@ -139,8 +139,8 @@ void Application::update(const float & deltatime)
 {
 	float theta = m_input.rotate;
 	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 5;
-	m_camera.pos = { -50.0f * std::cos(theta), 0.f, -50.0f * std::sin(theta) };
-	m_camera.view = glm::lookAt(m_camera.pos, { 0.f,20.f,0.f }, { 0.f,1.f,0.f });
+	m_camera.pos = { -70.0f * std::cos(theta), 0.f, -70.0f * std::sin(theta) };
+	//m_camera.view = glm::lookAt(m_camera.pos, { 0.f,20.f,0.f }, { 0.f,1.f,0.f });
 	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
 	m_camera.projection = glm::translate(m_camera.projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
 
@@ -185,12 +185,6 @@ void Application::initWindowOpenGL()
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-
-	//glClearColor(233.f / 255, 159.f / 255, 143.f / 255, 1.f);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
 }

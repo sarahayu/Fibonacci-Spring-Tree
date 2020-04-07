@@ -30,6 +30,11 @@ void TreeComponentRenderer::loadResources()
 
 }
 
+void TreeComponentRenderer::setCurrentModel(const glm::mat4 & model)
+{
+	m_model = model;
+}
+
 void TreeComponentRenderer::drawTree(const TreeMesh & mesh, const Camera & camera, const RenderSettings & settings)
 {
 	sf::Vector3f lightSource = { std::cos(settings.sunAzimuth),0.7f,std::sin(settings.sunAzimuth) };
@@ -44,7 +49,7 @@ void TreeComponentRenderer::drawTree(const TreeMesh & mesh, const Camera & camer
 	glDrawElements(GL_TRIANGLES, mesh.branches.indices.size(), GL_UNSIGNED_INT, 0);
 
 	static sf::Clock clock;
-	m_shaders.prepareLeavesDraw(camera, settings.leafDensity);
+	m_shaders.prepareLeavesDraw(camera, lightSource, settings.leafDensity);
 	m_shaders.setLeavesTime(clock.getElapsedTime().asSeconds());
 	m_shaders.setLeavesModel(glm::mat4(1.f));
 

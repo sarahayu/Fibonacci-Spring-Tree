@@ -7,7 +7,7 @@
 
 struct ShaderUtil
 {
-	static void linkShader(const std::string &vertexFile, const std::string &fragmentFile, unsigned int &ID);
+	static void linkShader(unsigned int &ID, const std::string &vertexFile, const std::string &fragmentFile = "");
 private:
 	static void load(const GLenum &shaderType, const std::string &file, unsigned int &shader);
 };

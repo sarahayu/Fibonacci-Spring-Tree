@@ -1,6 +1,6 @@
 #pragma once
 #include "TreeComponentRenderer.h"
-#include "BlurRenderer.h"
+#include "SceneRenderer.h"
 #include "Mesh.h"
 
 struct RenderSettings;
@@ -18,12 +18,12 @@ public:
 	void updateLeavesDrawable(const Tree &tree, const RenderSettings &settings);
 	void updateBranchesDrawable(const Tree &tree, const RenderSettings &settings);
 
-	void draw(Camera &camera, const RenderSettings &settings);
+	void draw(const Camera &camera, const RenderSettings &settings);
 
 private:
 
 	TreeComponentRenderer m_componentRenderer;
-	BlurRenderer m_blurRenderer;
+	SceneRenderer m_blurRenderer;
 
 	TreeMesh m_mesh;
 

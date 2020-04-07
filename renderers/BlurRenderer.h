@@ -1,48 +1,22 @@
 #pragma once
-#include <SFML\Graphics.hpp>
-#include <array>
+#include <functional>
+#include <glm\glm.hpp>
+#include "FBO.h"
 
-class TreeComponentRenderer;
-struct TreeMesh;
-struct RenderSettings;
 struct Camera;
 
 class BlurRenderer
 {
 public:
 
-	void loadResources(const sf::Vector2i &screenDimensions);
-	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
+	void reinstantiate(const sf::Vector2i &dimensions);
 
-	void draw(TreeComponentRenderer &componentRenderer, const TreeMesh &treeMesh, const Camera &camera, const RenderSettings &settings);
+	void setOptions(const int &lightrays, const float &aperture);
+
+	void render(FBO &finalBuffer, const Camera &camera, const glm::vec3 &focus, const std::function<void(const Camera&)> &renderFunc);
 
 private:
-
-	sf::Vector2i m_screenDimensions;
-
-	struct {
-		std::array<sf::Vector2f, 6> vertices = {
-			sf::Vector2f{ -1.f,1.f },
-			{ -1.f,-1.f },
-			{ 1.f,-1.f },
-			{ -1.f,1.f },
-			{ 1.f,-1.f },
-			{ 1.f,1.f }
-		};
-		unsigned int VAO, VBO;
-	} m_quadDrawable;
-
-	unsigned int quadShader;
-
-	struct {
-		unsigned int FBO,
-			depthRB,
-			colorRB;
-	} m_accumulationBuffer;
-
-	struct {
-		unsigned int FBO,
-			colorTex,
-			depthRB;
-	} m_textureBuffer;
+	int m_lightRays;
+	float m_aperture;
+	FBO m_buffer;
 };

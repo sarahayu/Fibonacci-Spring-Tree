@@ -19,5 +19,7 @@ void main()
 	vec3 reflectDir = reflect(-lightDir, normal);
 	vec3 specular = pow(max(dot(viewDir, reflectDir), 0.0), 32) * 0.5 * lightColor;
 
-    FragColor = vec4((ambient + diffuse + specular) * vec3(54.f / 255, 26.f / 255, 13.f / 255), 1.f);
+    vec4 color = vec4((ambient + diffuse + specular) * vec3(54.f / 255, 26.f / 255, 13.f / 255), 1.f);
+	color.xyz = mix(color.xyz, vec3(0.96, 0.84, 0.65), min(1.0, max(0.0, (gl_FragCoord.z / gl_FragCoord.w - 70.f) / 100.0)));
+	FragColor = color;
 } 

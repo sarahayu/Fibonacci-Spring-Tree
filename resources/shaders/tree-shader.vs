@@ -13,5 +13,5 @@ void main()
     gl_Position = projView * model * vec4(l_pos, 1.0);
 	
 	v_pos = l_pos;
-	v_normal = mat3(transpose(inverse(model))) * l_normal;
+	v_normal = /*mat3(transpose(inverse(model))) **/ l_normal;
 }

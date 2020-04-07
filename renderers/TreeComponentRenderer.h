@@ -13,10 +13,12 @@ class TreeComponentRenderer
 public:
 	void loadResources();
 
+	void setCurrentModel(const glm::mat4 &model);
 	void drawTree(const TreeMesh &mesh, const Camera &camera, const RenderSettings &settings);
 
 private:
 	TreeShaders m_shaders;
 
+	glm::mat4 m_model;
 	unsigned int m_leavesTexture;
 };

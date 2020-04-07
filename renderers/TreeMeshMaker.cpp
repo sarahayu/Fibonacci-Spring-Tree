@@ -12,10 +12,10 @@ namespace
 		BRANCH_IND_COUNT = CYLINDER_FACE_VERT_COUNT * 2 * 6;
 	
 	const std::array<LeafVertex, 4> LEAVES_VERTS = {
-		LeafVertex{ glm::vec3{ 0.5f,0.5f,0.f },glm::vec2{ 1.f,-1.f }, 0.f },
-		{ { 0.5f,-0.5f,0.f },{ 1.f,0.f }, 0.f },
-		{ { -0.5f,-0.5f,0.f },{ 0.f,0.f }, 0.f },
-		{ { -0.5f,0.5f,0.f },{ 0.f,-1.f }, 0.f }
+		LeafVertex{ glm::vec3{ 0.5f,0.5f,0.f }, glm::vec3{}, glm::vec2{ 1.f,-1.f }, 0.f },
+		{ { 0.5f,-0.5f,0.f },{}, { 1.f,0.f }, 0.f },
+		{ { -0.5f,-0.5f,0.f },{}, { 0.f,0.f }, 0.f },
+		{ { -0.5f,0.5f,0.f },{},  { 0.f,-1.f }, 0.f }
 	};
 	const std::array<unsigned int, 6> LEAVES_IND = { 0,3,2,0,2,1 };
 
@@ -112,17 +112,17 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 
 		for (int i = 0; i < 3; i++)
 		{
-			glm::mat4 globalModel = glm::mat4(1.f);
-			globalModel = glm::translate(globalModel, { position.x,position.y,position.z });
-
-			glm::mat4 localModel = glm::mat4(1.f);
-			localModel = glm::rotate(localModel, glm::radians(i * 60.f), { 0.f,1.f,0.f });
-			localModel = glm::rotate(localModel, glm::radians(faceRotate), { 0.f,0.f,1.f });
-			localModel = glm::scale(localModel, { density, density, density });
+			glm::mat4 model = glm::mat4(1.f);
+			model = glm::translate(model, { position.x,position.y,position.z });
+			model = glm::rotate(model, glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
+			model = glm::rotate(model, glm::radians(faceRotate), { 0.f,0.f,1.f });
+			model = glm::scale(model, { density, density, density });
 
 			for (const auto &vert : LEAVES_VERTS)
 				vertices.push_back({
-				globalModel * localModel * glm::vec4(vert.position, 1.f),
+				model * glm::vec4(vert.position, 1.f),
+				//glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3{0.f,0.f,1.f}),
+				glm::normalize(glm::vec3{ position.x, position.y * 0.1f, position.z }),
 				vert.texCoord,
 				position.y
 			});

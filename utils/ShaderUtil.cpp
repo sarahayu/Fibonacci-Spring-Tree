@@ -1,13 +1,13 @@
 #include "ShaderUtil.h"
 
-void ShaderUtil::linkShader(const std::string & vertexFile, const std::string & fragmentFile, unsigned int & ID)
+void ShaderUtil::linkShader(unsigned int & ID, const std::string & vertexFile, const std::string & fragmentFile)
 {
 	unsigned int vert, frag;
 	int success;
 	char infoLog[512];
 
-	load(GL_VERTEX_SHADER, vertexFile, vert);
-	load(GL_FRAGMENT_SHADER, fragmentFile, frag);
+	load(GL_VERTEX_SHADER, "resources/shaders/" + vertexFile + ".vs", vert);
+	load(GL_FRAGMENT_SHADER, "resources/shaders/" + (fragmentFile == "" ? vertexFile : fragmentFile) + ".fs", frag);
 
 	ID = glCreateProgram();
 	glAttachShader(ID, vert);
@@ -21,6 +21,8 @@ void ShaderUtil::linkShader(const std::string & vertexFile, const std::string & 
 	}
 	glDeleteShader(vert);
 	glDeleteShader(frag);
+
+	std::cout << "\nShader '" << vertexFile << "' successfully loaded!";
 }
 
 void ShaderUtil::load(const GLenum & shaderType, const std::string & file, unsigned int & shader)
@@ -37,7 +39,7 @@ void ShaderUtil::load(const GLenum & shaderType, const std::string & file, unsig
 		shaderFile.open(file);
 		shaderStream << shaderFile.rdbuf();
 	}
-	catch (const std::ifstream::failure &failed)
+	catch (...)
 	{
 		std::cout << "\nShader file could not be read!";
 	}
