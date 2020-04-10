@@ -8,6 +8,7 @@
 #include "generators\TreeGenerator.h"
 #include "imgui\imgui.h"
 #include "imgui\imgui-SFML.h"
+#include "utils\MathUtil.h"
 
 Application::Application()
 {
@@ -30,6 +31,7 @@ Application::Application()
 	m_input.sunAzimuth = 0.f;
 	m_input.depthOfField = 0.12f;
 	m_input.autoRotate = false;
+	m_input.sceneRotate = { 0.f,10.f,70.f };
 
 	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
 	m_tree.createNewTree(m_input);
@@ -82,10 +84,15 @@ void Application::input(const float & deltatime)
 			m_treeRenderer.reloadFramebuffers({ SCR_WIDTH, SCR_HEIGHT });
 		}
 		break;
-		case sf::Event::KeyReleased:
+		case sf::Event::MouseWheelScrolled:
+			m_input.sceneRotate.z += evnt.mouseWheelScroll.delta;
+			m_input.sceneRotate.z = std::max(m_input.sceneRotate.z, 0.f);
 			break;
 		}
 	}
+
+	sf::Vector2i currentPos = sf::Mouse::getPosition(m_window);
+	bool mouseWithin = false;
 
 	ImGui::Begin("Realtime tweaks", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -115,8 +122,12 @@ void Application::input(const float & deltatime)
 	ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
 	ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
 
-	ImVec2 nextWindowPos = ImGui::GetWindowPos();
-	nextWindowPos.y += ImGui::GetWindowSize().y;
+	ImVec2 winPos = ImGui::GetWindowPos();
+	ImVec2 winSize = ImGui::GetWindowSize();
+	mouseWithin |= sf::FloatRect(castSF2<ImVec2>(winPos),
+		castSF2<ImVec2>(winSize)).contains(sf::Vector2f(currentPos));
+
+	ImVec2 nextWindowPos(winPos.x, winPos.y + winSize.y);
 
 	ImGui::End();
 
@@ -132,15 +143,34 @@ void Application::input(const float & deltatime)
 		m_treeRenderer.createDrawable(m_tree, m_input);
 	}
 
+	winPos = ImGui::GetWindowPos();
+	winSize = ImGui::GetWindowSize();
+	mouseWithin |= sf::FloatRect(castSF2<ImVec2>(winPos),
+		castSF2<ImVec2>(winSize)).contains(sf::Vector2f(currentPos));
+
 	ImGui::End();
+
+	static sf::Vector2i lastMousePos = sf::Mouse::getPosition(m_window);
+
+	if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !mouseWithin)
+	{
+		sf::Vector2f rotate(currentPos - lastMousePos);
+		m_input.sceneRotate += glm::vec3(rotate.x, rotate.y, 0.f) * 0.1f;
+	}
+	//m_input.sceneRotate.y = std::min(PI / 2 - 0.1f, std::max(m_input.sceneRotate.y, 0.f));
+
+	lastMousePos = currentPos;
 }
 
 void Application::update(const float & deltatime)
 {
-	float theta = m_input.rotate;
-	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 5;
-	m_camera.pos = { -70.0f * std::cos(theta), 0.f, -70.0f * std::sin(theta) };
-	//m_camera.view = glm::lookAt(m_camera.pos, { 0.f,20.f,0.f }, { 0.f,1.f,0.f });
+	float theta = m_input.sceneRotate.x + m_input.rotate;
+	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 10;
+	//float cosY = std::cos(m_input.sceneRotate.y);
+	float radius = m_input.sceneRotate.z;
+	m_camera.pos = { radius * std::cos(theta), 0.f, radius * std::sin(theta) };
+	m_camera.focus = { 0.f, m_input.sceneRotate.y, 0.f };
+	m_camera.view = glm::lookAt(m_camera.pos, m_camera.focus, { 0.f,1.f,0.f });
 	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
 	m_camera.projection = glm::translate(m_camera.projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
 
@@ -186,5 +216,6 @@ void Application::initWindowOpenGL()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
 	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }

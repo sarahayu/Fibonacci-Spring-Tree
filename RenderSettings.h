@@ -1,4 +1,5 @@
 #pragma once
+#include <glm\glm.hpp>
 
 struct RenderSettings
 {
@@ -16,4 +17,5 @@ struct RenderSettings
 	float sunAzimuth;
 	float depthOfField;
 	bool autoRotate;
+	glm::vec3 sceneRotate;
 };

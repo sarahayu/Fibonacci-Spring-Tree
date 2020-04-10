@@ -23,6 +23,20 @@ private:
 
 	BlurRenderer m_blurRenderer;
 	FBO m_accumBuffer;
+	FBO m_depthBuffer;
+
+	struct {
+		unsigned int VAO, VBO;
+		std::array<glm::vec3, 6> vertices;
+	} m_waterPlane;
+
 	unsigned int m_bgShader;
-	unsigned int m_waterShader;
+	struct {
+		unsigned int ID;
+		float cameraPitch, screenHeight;
+	} m_waterShader;
+	struct {
+		unsigned int ID;
+		float lightMVP;
+	} m_shadowShader;
 };

@@ -4,7 +4,6 @@ layout (location = 1) in vec3 l_normal;
 layout (location = 2) in vec2 l_texCoord;;
 layout (location = 3) in float l_yCenter;
 
-uniform mat4 model;
 uniform mat4 projView;
 uniform float time;
 uniform float leafSize;
@@ -21,7 +20,7 @@ void main()
 	vec3 sinPos = l_pos;
 	sinPos.y += sin(time * 2 + l_pos.x / 10) / 5;
 
-	gl_Position = projView * model * vec4(sinPos, 1.0);
+	gl_Position = projView * vec4(sinPos, 1.0);
 	v_texturePos = l_texCoord;
 	v_pos = l_pos;
 	v_normal = l_normal;

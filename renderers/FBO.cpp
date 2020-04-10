@@ -1,7 +1,7 @@
 #include "FBO.h"
 #include <glad\glad.h>
 
-void FBO::reinstantiate(const sf::Vector2i & dimensions)
+void FBO::rebuild(const sf::Vector2i & dimensions)
 {
 	m_dimensions = dimensions;
 	destroy();
@@ -36,14 +36,19 @@ void FBO::bindTexture()
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 }
 
+const unsigned int FBO::getTextureID() const
+{
+	return m_texture;
+}
+
+void FBO::attachDepthTexture()
+{
+	attachTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+}
+
 void FBO::attachColorTexture()
 {
-	glGenTextures(1, &m_texture);
-	glBindTexture(GL_TEXTURE_2D, m_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_dimensions.x, m_dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0);
+	attachTexture(GL_COLOR_ATTACHMENT0, GL_RGBA, GL_UNSIGNED_BYTE);
 }
 
 void FBO::attachDepthBuffer()
@@ -64,4 +69,16 @@ void FBO::attachRenderbuffer(const unsigned int & internalformat, const unsigned
 	glRenderbufferStorage(GL_RENDERBUFFER, internalformat, m_dimensions.x, m_dimensions.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rb);
 	m_buffers.push_back(rb);
+}
+
+void FBO::attachTexture(const unsigned int & attachment, const unsigned int & format, const unsigned int & dataType)
+{
+	glGenTextures(1, &m_texture);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, m_dimensions.x, m_dimensions.y, 0, format, dataType, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, m_texture, 0);
 }

@@ -11,6 +11,8 @@ varying float v_darken;
 varying vec3 v_pos;
 varying vec3 v_normal;
 
+vec4 skyColor = vec4(0.96, 0.84, 0.65, 1.0);
+
 void main()
 {
 	vec4 color = texture(leafTexture, v_texturePos);
@@ -28,7 +30,7 @@ void main()
 	vec3 specular = pow(max(dot(viewDir, reflectDir), 0.0), 32) * 0.5 * lightColor;
 
 	color.xyz = (ambient + diffuse + specular) * color.xyz;
-	color.xyz *= max(min(v_darken, 1.0),0.01);
-	color.xyz = mix(color.xyz, vec3(0.96, 0.84, 0.65), min(1.0, max(0.0, (gl_FragCoord.z / gl_FragCoord.w - 70.f) / 100.0)));
+	color.xyz *= clamp(v_darken, 0.01, 1.0);
+	color.xyz = mix(color.xyz, skyColor.xyz, clamp((gl_FragCoord.z / gl_FragCoord.w - 70.f) / 100.0, 0.0, 1.0));
 	FragColor = color;
 } 

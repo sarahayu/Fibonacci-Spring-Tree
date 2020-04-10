@@ -1,6 +1,4 @@
 #pragma once
-#include <SFML\Graphics.hpp>
-#include <glm\glm.hpp>
 #include <array>
 #include "renderers\TreeRenderer.h"
 #include "utils\MathUtil.h"
@@ -28,6 +26,7 @@ private:
 
 	sf::Clock m_clock;
 	sf::RenderWindow m_window;
+	
 	RenderSettings m_input;
 	Camera m_camera;
 	FPS m_fps;

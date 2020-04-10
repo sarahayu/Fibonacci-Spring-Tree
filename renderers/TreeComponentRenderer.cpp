@@ -30,31 +30,45 @@ void TreeComponentRenderer::loadResources()
 
 }
 
-void TreeComponentRenderer::setCurrentModel(const glm::mat4 & model)
+void TreeComponentRenderer::setShadowInfo(const unsigned int & shadowMap, const glm::mat4 & lightMatrix)
 {
-	m_model = model;
+	m_shadowMapTexture = shadowMap;
+	m_lightMVP = lightMatrix;
+}
+
+void TreeComponentRenderer::drawTreeRaw(const TreeMesh & mesh)
+{
+	glBindTexture(GL_TEXTURE_2D, 0);
+	drawBranches(mesh);
+	drawLeaves(mesh);
 }
 
 void TreeComponentRenderer::drawTree(const TreeMesh & mesh, const Camera & camera, const RenderSettings & settings)
 {
-	sf::Vector3f lightSource = { std::cos(settings.sunAzimuth),0.7f,std::sin(settings.sunAzimuth) };
-	m_shaders.prepareBranchDraw(camera, lightSource);
-	m_shaders.setBranchModel(glm::mat4(1.f));
+	sf::Vector3f lightSource = getSunPos(settings.sunAzimuth);
+	m_shaders.prepareBranchDraw(camera, lightSource, m_lightMVP);
 
-	glBindVertexArray(mesh.branches.VAO);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-
-	glDrawElements(GL_TRIANGLES, mesh.branches.indices.size(), GL_UNSIGNED_INT, 0);
+	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
+	drawBranches(mesh);
 
 	static sf::Clock clock;
-	m_shaders.prepareLeavesDraw(camera, lightSource, settings.leafDensity);
-	m_shaders.setLeavesTime(clock.getElapsedTime().asSeconds());
-	m_shaders.setLeavesModel(glm::mat4(1.f));
+	m_shaders.prepareLeavesDraw(camera, lightSource, settings.leafDensity, clock.getElapsedTime().asSeconds());
 
+	glDisable(GL_CULL_FACE);
+	drawLeaves(mesh);
+
+	glEnable(GL_CULL_FACE);
+}
+
+void TreeComponentRenderer::drawBranches(const TreeMesh & mesh)
+{
+	glBindVertexArray(mesh.branches.VAO);
+	glDrawElements(GL_TRIANGLES, mesh.branches.indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void TreeComponentRenderer::drawLeaves(const TreeMesh & mesh)
+{
 	glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
 	glBindVertexArray(mesh.leaves.VAO);
-	glDisable(GL_CULL_FACE);
 	glDrawElements(GL_TRIANGLES, mesh.leaves.indices.size(), GL_UNSIGNED_INT, 0);
 }

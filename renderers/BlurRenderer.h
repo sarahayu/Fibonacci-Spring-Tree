@@ -13,7 +13,7 @@ public:
 
 	void setOptions(const int &lightrays, const float &aperture);
 
-	void render(FBO &finalBuffer, const Camera &camera, const glm::vec3 &focus, const std::function<void(const Camera&)> &renderFunc);
+	void render(FBO &finalBuffer, const Camera &camera, const std::function<void(const Camera&)> &renderFunc);
 
 private:
 	int m_lightRays;

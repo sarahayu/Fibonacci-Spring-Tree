@@ -4,6 +4,7 @@
 #include "..\RenderSettings.h"
 #include "..\Tree.h"
 #include "Mesh.h"
+#include "..\utils\MathUtil.h"
 
 namespace
 {
@@ -76,7 +77,7 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 		const sf::Vector3f position = branch.start;
 		const sf::Vector2f rotation = branch.rotation;
 		glm::mat4 model = glm::mat4(1.f);
-		model = glm::translate(model, { position.x, position.y, position.z });
+		model = glm::translate(model, castSF3<glm::vec3>(position));
 		model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
 		model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
 		float shrinkScale = std::pow(settings.branchTaper, branch.generation);
@@ -109,20 +110,20 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 	for (const sf::Vector3f &position : tree.getLeaves())
 	{
 		float density = settings.leafDensity;
+		float outAngle = -(std::atan2f(position.z, position.x) + PI / 2);
 
 		for (int i = 0; i < 3; i++)
 		{
 			glm::mat4 model = glm::mat4(1.f);
-			model = glm::translate(model, { position.x,position.y,position.z });
-			model = glm::rotate(model, glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
+			model = glm::translate(model, castSF3<glm::vec3>(position));
+			model = glm::rotate(model, outAngle + glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
 			model = glm::rotate(model, glm::radians(faceRotate), { 0.f,0.f,1.f });
-			model = glm::scale(model, { density, density, density });
+			model = glm::scale(model, glm::vec3(settings.leafDensity));
 
 			for (const auto &vert : LEAVES_VERTS)
 				vertices.push_back({
 				model * glm::vec4(vert.position, 1.f),
-				//glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3{0.f,0.f,1.f}),
-				glm::normalize(glm::vec3{ position.x, position.y * 0.1f, position.z }),
+				glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3(0.f,0.f,-1.f)),
 				vert.texCoord,
 				position.y
 			});
@@ -131,7 +132,7 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 				indices.push_back(index + indexOffset);
 
 			indexOffset += LEAVES_VERTS.size();
-			faceRotate += 135.f;
+			faceRotate += 130.f;
 		}
 	}
 

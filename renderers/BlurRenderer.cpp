@@ -6,7 +6,7 @@
 
 void BlurRenderer::reinstantiate(const sf::Vector2i & dimensions)
 {
-	m_buffer.reinstantiate(dimensions);
+	m_buffer.rebuild(dimensions);
 	m_buffer.attachDepthBuffer();
 	m_buffer.attachColorTexture();
 }
@@ -17,10 +17,10 @@ void BlurRenderer::setOptions(const int & lightrays, const float & aperture)
 	m_aperture = aperture;
 }
 
-void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const glm::vec3 & focus, const std::function<void(const Camera&)>& renderFunc)
+void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::function<void(const Camera&)>& renderFunc)
 {
-	glm::vec3 jitterCamRight = glm::normalize(glm::cross(focus - camera.pos, { 0.f,1.f,0.f }));
-	glm::vec3 jitterCamUp = glm::normalize(glm::cross(focus - camera.pos, jitterCamRight)); jitterCamUp.y = -jitterCamUp.y;
+	glm::vec3 jitterCamRight = glm::normalize(glm::cross(camera.focus - camera.pos, { 0.f,1.f,0.f }));
+	glm::vec3 jitterCamUp = glm::normalize(glm::cross(camera.focus - camera.pos, jitterCamRight)); jitterCamUp.y = -jitterCamUp.y;
 
 	for (int i = 0; i < m_lightRays; i++)
 	{
@@ -28,11 +28,10 @@ void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const glm::v
 			+ jitterCamUp * std::sin(i * glm::two_pi<float>() / m_lightRays));;
 
 		m_buffer.bindAndClear();
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		Camera jitterCam = camera;
 		jitterCam.pos += jitterOffset;
-		jitterCam.view = glm::lookAt(jitterCam.pos, focus, jitterCamUp);
+		jitterCam.view = glm::lookAt(jitterCam.pos, camera.focus, jitterCamUp);
 
 		renderFunc(jitterCam);
 
@@ -46,5 +45,9 @@ void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const glm::v
 		glBlendColor(0.f, 0.f, 0.f, 1.f / m_lightRays);
 
 		ScreenQuad::getQuad().draw();
+
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 }

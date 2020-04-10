@@ -11,8 +11,11 @@ ScreenQuad & ScreenQuad::getQuad()
 void ScreenQuad::draw(const bool & useTextureShader)
 {
 	if (useTextureShader) glUseProgram(m_quadShader.ID);
+	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(m_quadDrawable.VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+	
+	glEnable(GL_DEPTH_TEST);
 }
 
 ScreenQuad::ScreenQuad()

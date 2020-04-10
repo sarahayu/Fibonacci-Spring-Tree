@@ -11,3 +11,8 @@ const sf::Vector3f rotate(const sf::Vector3f & point, const sf::Vector2f & angle
 		rotatedZ.y,
 		rotatedZ.z * std::cos(angle.x) + rotatedZ.x * std::sin(angle.x));
 }
+
+const sf::Vector3f getSunPos(const float & azimuth)
+{
+	return{ std::cos(azimuth),0.7f,std::sin(azimuth) };
+}
