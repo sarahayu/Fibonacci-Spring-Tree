@@ -31,11 +31,17 @@ Application::Application()
 	m_input.sunAzimuth = 0.f;
 	m_input.depthOfField = 0.12f;
 	m_input.autoRotate = false;
+	m_input.multisampling = true;
 	m_input.sceneRotate = { 0.f,10.f,70.f };
 
 	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
 	m_tree.createNewTree(m_input);
 	m_treeRenderer.createDrawable(m_tree, m_input);
+}
+
+Application::~Application()
+{
+	std::cout << "\nApplication destroying...";
 }
 
 void Application::run()
@@ -59,8 +65,10 @@ void Application::run()
 		}
 		draw();
 	}
+	std::cout << "\nEnd of run....";
 	glfwTerminate();
 	ImGui::SFML::Shutdown();
+	std::cout << "\nRun ended!";
 }
 
 void Application::input(const float & deltatime)
@@ -121,6 +129,7 @@ void Application::input(const float & deltatime)
 	ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
 	ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
 	ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
+	ImGui::Checkbox("Multisampling", &m_input.multisampling);
 
 	ImVec2 winPos = ImGui::GetWindowPos();
 	ImVec2 winSize = ImGui::GetWindowSize();
@@ -168,10 +177,12 @@ void Application::update(const float & deltatime)
 	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 10;
 	//float cosY = std::cos(m_input.sceneRotate.y);
 	float radius = m_input.sceneRotate.z;
-	m_camera.pos = { radius * std::cos(theta), 0.f, radius * std::sin(theta) };
+	m_camera.pos = { radius * std::cos(theta), 20.f, radius * std::sin(theta) };
 	m_camera.focus = { 0.f, m_input.sceneRotate.y, 0.f };
-	m_camera.view = glm::lookAt(m_camera.pos, m_camera.focus, { 0.f,1.f,0.f });
-	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.f);
+	glm::vec3 right = glm::normalize(glm::cross(m_camera.focus - m_camera.pos, { 0.f,1.f,0.f }));
+	glm::vec3 up = glm::normalize(glm::cross(m_camera.focus - m_camera.pos, right)); up.y = -up.y;
+	m_camera.view = glm::lookAt(m_camera.pos, m_camera.focus, up);
+	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 300.f);
 	m_camera.projection = glm::translate(m_camera.projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
 
 }
@@ -217,5 +228,7 @@ void Application::initWindowOpenGL()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_MULTISAMPLE);
+
 	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }

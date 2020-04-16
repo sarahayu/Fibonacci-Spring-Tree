@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-#include "renderers\TreeRenderer.h"
+#include "renderers\MasterRenderer.h"
 #include "utils\MathUtil.h"
 #include "RenderSettings.h"
 #include "Camera.h"
@@ -11,6 +11,7 @@ class Application
 {
 public:
 	Application();
+	~Application();
 
 	void run();
 
@@ -31,5 +32,5 @@ private:
 	Camera m_camera;
 	FPS m_fps;
 	Tree m_tree;
-	TreeRenderer m_treeRenderer;
+	MasterRenderer m_treeRenderer;
 };

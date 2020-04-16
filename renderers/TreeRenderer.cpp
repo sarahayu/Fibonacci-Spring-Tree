@@ -2,94 +2,77 @@
 #include <glad\glad.h>
 #include <GLFW\glfw3.h>
 #include <iostream>
-#include <array>
-#include "..\RenderSettings.h"
-#include "..\Camera.h"
 #include "..\utils\MathUtil.h"
-#include "..\Tree.h"
-#include "TreeMeshMaker.h"
+#include "..\RenderSettings.h"
+#include "..\Branch.h"
+#include "Mesh.h"
 
 
-void TreeRenderer::loadResources(const sf::Vector2i & screenDimensions)
+void TreeRenderer::loadResources()
 {
-	m_componentRenderer.loadResources();
-	m_blurRenderer.loadResources(screenDimensions);
+	m_shaders.loadResources();
+
+	auto loadTexture = [&](const std::string &file) {
+
+		sf::Image image;
+		if (!image.loadFromFile(file)) throw std::runtime_error("Could not load file '" + file + "'!");
+
+		glGenTextures(1, &m_leavesTexture);
+		glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	};
+
+	loadTexture("resources/leaves.png");
+
 }
 
-void TreeRenderer::reloadFramebuffers(const sf::Vector2i & screenDimensions)
+void TreeRenderer::setShadowInfo(const unsigned int & shadowMap, const glm::mat4 & lightMatrix)
 {
-	m_blurRenderer.reloadFramebuffers(screenDimensions);
+	m_shadowMapTexture = shadowMap;
+	m_lightMVP = lightMatrix;
 }
 
-void TreeRenderer::createDrawable(const Tree & tree, const RenderSettings & settings)
+void TreeRenderer::drawTreeRaw(const TreeMesh & mesh)
 {
-	updateLeavesDrawable(tree, settings);
-	updateBranchesDrawable(tree, settings);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	drawBranches(mesh);
+	drawLeaves(mesh);
 }
 
-void TreeRenderer::updateLeavesDrawable(const Tree & tree, const RenderSettings & settings)
+void TreeRenderer::drawTree(const TreeMesh & mesh, const Camera & camera, const RenderSettings & settings)
 {
-	TreeMeshMaker::createLeavesMesh(tree, m_mesh, settings);
+	sf::Vector3f lightSource = getSunPos(settings.sunAzimuth);
+	m_shaders.prepareBranchDraw(camera, lightSource, m_lightMVP);
 
-	auto &leaves = m_mesh.leaves;
+	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
+	drawBranches(mesh);
 
-	if (leaves.VAO)
-	{
-		glDeleteVertexArrays(1, &leaves.VAO);
-		glDeleteBuffers(1, &leaves.VBO);
-		glDeleteBuffers(1, &leaves.EBO);
-	}
+	static sf::Clock clock;
+	m_shaders.prepareLeavesDraw(camera, lightSource, settings.leafDensity, clock.getElapsedTime().asSeconds(), m_lightMVP);
 
-	glGenVertexArrays(1, &leaves.VAO);
-	glGenBuffers(1, &leaves.VBO);
-	glGenBuffers(1, &leaves.EBO);
-	glBindVertexArray(leaves.VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, leaves.VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(LeafVertex) * leaves.vertices.size(), leaves.vertices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, leaves.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * leaves.indices.size(), leaves.indices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, normal)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, texCoord)));
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, yCenter)));
-	glEnableVertexAttribArray(3);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
+	glDisable(GL_CULL_FACE);
+	drawLeaves(mesh);
+
+	glEnable(GL_CULL_FACE);
 }
 
-void TreeRenderer::updateBranchesDrawable(const Tree & tree, const RenderSettings & settings)
+void TreeRenderer::drawBranches(const TreeMesh & mesh)
 {
-	TreeMeshMaker::createBranchesMesh(tree, m_mesh, settings);
-
-	auto &branches = m_mesh.branches;
-
-	if (branches.VAO)
-	{
-		glDeleteVertexArrays(1, &branches.VAO);
-		glDeleteBuffers(1, &branches.VBO);
-		glDeleteBuffers(1, &branches.EBO);
-	}
-
-	glGenVertexArrays(1, &branches.VAO);
-	glGenBuffers(1, &branches.VBO);
-	glGenBuffers(1, &branches.EBO);
-	glBindVertexArray(branches.VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, branches.VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(BranchVertex) * branches.vertices.size(), branches.vertices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, branches.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * branches.indices.size(), branches.indices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(BranchVertex), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(BranchVertex), (void*)(offsetof(BranchVertex, normal)));
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	glBindVertexArray(mesh.branches.VAO);
+	glDrawElements(GL_TRIANGLES, mesh.branches.indices.size(), GL_UNSIGNED_INT, 0);
 }
 
-void TreeRenderer::draw(const Camera & camera, const RenderSettings & settings)
+void TreeRenderer::drawLeaves(const TreeMesh & mesh)
 {
-	m_blurRenderer.draw(m_componentRenderer, m_mesh, camera, settings);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
+	glBindVertexArray(mesh.leaves.VAO);
+	glDrawElements(GL_TRIANGLES, mesh.leaves.indices.size(), GL_UNSIGNED_INT, 0);
 }

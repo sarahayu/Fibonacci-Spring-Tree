@@ -3,7 +3,7 @@
 #include "TreeSkeleton.h"
 #include "Branch.h"
 
-class TreeRenderer;
+class MasterRenderer;
 struct Camera;
 struct RenderSettings;
 

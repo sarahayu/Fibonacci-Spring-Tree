@@ -1,31 +1,32 @@
 #pragma once
-#include "TreeComponentRenderer.h"
-#include "SceneRenderer.h"
-#include "Mesh.h"
+#include <SFML\Graphics.hpp>
+#include <array>
+#include "TreeShaders.h"
+#include "..\Camera.h"
 
-struct RenderSettings;
+struct TreeMesh;
 struct Camera;
-class Tree;
+struct RenderSettings;
 
 class TreeRenderer
 {
 public:
-	void loadResources(const sf::Vector2i &screenDimensions);
-	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
 
-	void createDrawable(const Tree &tree, const RenderSettings &settings);
+	void loadResources();
 
-	void updateLeavesDrawable(const Tree &tree, const RenderSettings &settings);
-	void updateBranchesDrawable(const Tree &tree, const RenderSettings &settings);
+	void setShadowInfo(const unsigned int &shadowMap, const glm::mat4 &lightMatrix);
 
-	void draw(const Camera &camera, const RenderSettings &settings);
+	void drawTreeRaw(const TreeMesh &mesh);
+	void drawTree(const TreeMesh &mesh, const Camera &camera, const RenderSettings &settings);
 
 private:
 
-	TreeComponentRenderer m_componentRenderer;
-	SceneRenderer m_blurRenderer;
+	void drawBranches(const TreeMesh &mesh);
+	void drawLeaves(const TreeMesh &mesh);
 
-	TreeMesh m_mesh;
+	TreeShaders m_shaders;
 
-	sf::Clock m_clock;
+	unsigned int m_leavesTexture;
+	unsigned int m_shadowMapTexture;
+	glm::mat4 m_lightMVP;
 };

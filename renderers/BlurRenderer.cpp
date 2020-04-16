@@ -9,12 +9,16 @@ void BlurRenderer::reinstantiate(const sf::Vector2i & dimensions)
 	m_buffer.rebuild(dimensions);
 	m_buffer.attachDepthBuffer();
 	m_buffer.attachColorTexture();
+	m_buffer2.rebuild(dimensions);
+	m_buffer2.attachDepthBuffer();
+	m_buffer2.attachColorTexture();
 }
 
-void BlurRenderer::setOptions(const int & lightrays, const float & aperture)
+void BlurRenderer::setOptions(const int & lightrays, const float & aperture, const bool & multisample)
 {
 	m_lightRays = lightrays;
 	m_aperture = aperture;
+	m_ms = multisample;
 }
 
 void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::function<void(const Camera&)>& renderFunc)
@@ -27,7 +31,8 @@ void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::f
 		glm::vec3 jitterOffset = m_aperture * (jitterCamRight * std::cos(i * glm::two_pi<float>() / m_lightRays) 
 			+ jitterCamUp * std::sin(i * glm::two_pi<float>() / m_lightRays));;
 
-		m_buffer.bindAndClear();
+		if (m_ms) m_buffer.bindAndClear();
+		else m_buffer2.bindAndClear();
 
 		Camera jitterCam = camera;
 		jitterCam.pos += jitterOffset;
@@ -35,8 +40,17 @@ void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::f
 
 		renderFunc(jitterCam);
 
-		finalBuffer.bind();
-		m_buffer.bindTexture();
+		if (m_ms)
+		{
+			m_buffer.blitTexture();
+			finalBuffer.bind();
+			m_buffer.bindTexture();
+		}
+		else
+		{
+			finalBuffer.bind();
+			m_buffer2.bindTexture();
+		}
 
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);

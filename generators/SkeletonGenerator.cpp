@@ -1,6 +1,6 @@
 #include "SkeletonGenerator.h"
-#include "MathUtil.h"
-#include "TreeSkeleton.h"
+#include "..\utils\MathUtil.h"
+#include "..\TreeSkeleton.h"
 
 namespace
 {

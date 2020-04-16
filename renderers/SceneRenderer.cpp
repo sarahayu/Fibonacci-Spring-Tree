@@ -11,19 +11,20 @@
 #include "..\RenderSettings.h"
 #include "..\Camera.h"
 #include "..\Tree.h"
-#include "TreeComponentRenderer.h"
+#include "TreeRenderer.h"
 #include "ScreenQuad.h"
 #include "Mesh.h"
+
 
 void SceneRenderer::loadResources(const sf::Vector2i & screenDimensions)
 {
 	m_waterPlane.vertices = {
-		glm::vec3{ 500.f, 0.f, 500.f },
-		{ -500.f, 0.f, -500.f },
-		{ 500.f, 0.f, -500.f },
-		{ 500.f, 0.f, 500.f },
-		{ -500.f, 0.f, 500.f },
-		{ -500.f, 0.f, -500.f },
+		glm::vec3{ -1000.f, 0.f, 1000.f },
+		{ 1000.f, 0.f, -1000.f },
+		{ -1000.f, 0.f, -1000.f },
+		{ -1000.f, 0.f, 1000.f },
+		{ 1000.f, 0.f, 1000.f },
+		{ 1000.f, 0.f, -1000.f },
 	};
 
 	glGenVertexArrays(1, &m_waterPlane.VAO);
@@ -32,7 +33,21 @@ void SceneRenderer::loadResources(const sf::Vector2i & screenDimensions)
 	glBindBuffer(GL_ARRAY_BUFFER, m_waterPlane.VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * m_waterPlane.vertices.size(), m_waterPlane.vertices.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	ShaderUtil::linkShader(m_bgShader, "quad-shader", "background-shader");
+	ShaderUtil::linkShader(m_waterShader.ID, "water-shader");
+	glUseProgram(m_waterShader.ID);
+	m_waterShader.projView = glGetUniformLocation(m_waterShader.ID, "projView");
+	m_waterShader.windowSize = glGetUniformLocation(m_waterShader.ID, "windowSize");
+	m_waterShader.lightMVP = glGetUniformLocation(m_waterShader.ID, "lightMVP");
+	m_waterShader.shadowMap = glGetUniformLocation(m_waterShader.ID, "shadowMap");
+	glUniform1i(m_waterShader.shadowMap, 0);
+	m_waterShader.screenTexture = glGetUniformLocation(m_waterShader.ID, "screenTexture");
+	glUniform1i(m_waterShader.screenTexture, 1);
+	ShaderUtil::linkShader(m_shadowShader.ID, "shadow-shader", "shadow-shader");
+	glUseProgram(m_shadowShader.ID);
+	m_shadowShader.lightMVP = glGetUniformLocation(m_shadowShader.ID, "lightMVP");
 
 	m_depthBuffer.rebuild({ 1024,1024 });
 	m_depthBuffer.attachDepthTexture();
@@ -52,19 +67,10 @@ void SceneRenderer::reloadFramebuffers(const sf::Vector2i & screenDimensions)
 
 	m_blurRenderer.reinstantiate(screenDimensions);
 
-	ShaderUtil::linkShader(m_bgShader, "quad-shader", "background-shader");
-	ShaderUtil::linkShader(m_waterShader.ID, "quad-shader", "reflection-shader");
-	glUseProgram(m_waterShader.ID);
-	m_waterShader.cameraPitch = glGetUniformLocation(m_waterShader.ID, "cameraPitch");
-	m_waterShader.screenHeight = glGetUniformLocation(m_waterShader.ID, "screenHeight");
-	ShaderUtil::linkShader(m_shadowShader.ID, "shadow-shader", "shadow-shader");
-	glUseProgram(m_shadowShader.ID);
-	m_shadowShader.lightMVP = glGetUniformLocation(m_shadowShader.ID, "lightMVP");
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void SceneRenderer::draw(TreeComponentRenderer & componentRenderer, const TreeMesh & treeMesh, const Camera & camera, const RenderSettings & settings)
+void SceneRenderer::draw(TreeRenderer & componentRenderer, const TreeMesh & treeMesh, const Camera & camera, const RenderSettings & settings)
 {
 	static sf::Clock clock;
 	float elapsed = clock.getElapsedTime().asSeconds();
@@ -85,13 +91,13 @@ void SceneRenderer::draw(TreeComponentRenderer & componentRenderer, const TreeMe
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, m_screenDimensions.x, m_screenDimensions.y);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+	
 	glUseProgram(m_bgShader);
 	ScreenQuad::getQuad().draw(false);
 
 	m_accumBuffer.bindAndClear();
 
-	m_blurRenderer.setOptions(4, settings.depthOfField);
+	m_blurRenderer.setOptions(3, settings.depthOfField, settings.multisampling);
 
 	m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {
 		glCullFace(GL_FRONT);
@@ -105,12 +111,20 @@ void SceneRenderer::draw(TreeComponentRenderer & componentRenderer, const TreeMe
 	glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	glActiveTexture(GL_TEXTURE0);
+	m_depthBuffer.bindTexture();
+	glActiveTexture(GL_TEXTURE1);
 	m_accumBuffer.bindTexture();
-	glUseProgram(m_waterShader.ID);
-	glUniform1f(m_waterShader.cameraPitch, std::atan2f(camera.focus.y, settings.sceneRotate.z));
-	glUniform1f(m_waterShader.screenHeight, m_screenDimensions.y);
-	ScreenQuad::getQuad().draw(false);
 
+	glUseProgram(m_waterShader.ID);
+	glm::mat4 projView = camera.projection * camera.view;
+	glUniformMatrix4fv(m_waterShader.projView, 1, GL_FALSE, &projView[0][0]);
+	glUniform2f(m_waterShader.windowSize, m_screenDimensions.x, m_screenDimensions.y);
+	glUniformMatrix4fv(m_waterShader.lightMVP, 1, GL_FALSE, &lightMVP[0][0]);
+	glBindVertexArray(m_waterPlane.VAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glActiveTexture(GL_TEXTURE0);
 	m_accumBuffer.bindAndClear();
 
 	m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {

@@ -17,5 +17,6 @@ struct RenderSettings
 	float sunAzimuth;
 	float depthOfField;
 	bool autoRotate;
+	bool multisampling;
 	glm::vec3 sceneRotate;
 };

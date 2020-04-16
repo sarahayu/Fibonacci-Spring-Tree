@@ -11,7 +11,7 @@ public:
 	void loadResources();
 
 	void prepareBranchDraw(const Camera &camera, const sf::Vector3f &lightSource, const glm::mat4 &lightMVP);
-	void prepareLeavesDraw(const Camera &camera, const sf::Vector3f &lightSource, const float &leafSize, const float &elapsed);
+	void prepareLeavesDraw(const Camera &camera, const sf::Vector3f &lightSource, const float &leafSize, const float &elapsed, const glm::mat4 &lightMVP);
 private:
 
 	struct {
@@ -29,5 +29,6 @@ private:
 		int lightSource;
 		int time;
 		int leafSize;
+		int lightMVP;
 	} m_leafShader;
 };

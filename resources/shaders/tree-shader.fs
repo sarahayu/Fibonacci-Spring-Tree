@@ -15,11 +15,12 @@ float getShadow(vec3 position, vec3 lightDir)
 {
 	vec3 projCoords = v_lightSpacePos.xyz / v_lightSpacePos.w;
 	projCoords = projCoords * 0.5 + vec3(0.5);
+	if (projCoords.z > 1.0) return 0.0;
 	float shadowDepth = texture(shadowMap, projCoords.xy).r;
 	float posDepth = projCoords.z;
-	float bias = max(0.005, 0.5 * (1.0 - dot(v_normal, lightDir)));
+	float bias = max(0.005, 0.05 * (1.0 - dot(v_normal, lightDir)));
 	
-	return (posDepth - 0.005 > shadowDepth ? 1.0 : 0.0);
+	return (posDepth - bias > shadowDepth ? 1.0 : 0.0);
 }
 
 void main()
@@ -28,7 +29,7 @@ void main()
 	vec3 lightColor = vec3(0.96, 0.84, 0.65);
     vec3 ambient = ambientStrength * lightColor;
 	vec3 normal = normalize(v_normal);
-	vec3 lightDir = normalize(-lightSource);
+	vec3 lightDir = normalize(lightSource);
 	vec3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor;
 	vec3 viewDir = normalize(cameraPos - v_pos);
 	vec3 reflectDir = reflect(-lightDir, normal);

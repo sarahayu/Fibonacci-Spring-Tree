@@ -1,9 +1,9 @@
 #pragma once
 #include <array>
-#include "FBO.h"
 #include "BlurRenderer.h"
+#include "MSFBO.h"
 
-class TreeComponentRenderer;
+class TreeRenderer;
 struct TreeMesh;
 struct RenderSettings;
 struct Camera;
@@ -15,7 +15,7 @@ public:
 	void loadResources(const sf::Vector2i &screenDimensions);
 	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
 
-	void draw(TreeComponentRenderer &componentRenderer, const TreeMesh &treeMesh, const Camera &camera, const RenderSettings &settings);
+	void draw(TreeRenderer &componentRenderer, const TreeMesh &treeMesh, const Camera &camera, const RenderSettings &settings);
 
 private:
 
@@ -33,10 +33,14 @@ private:
 	unsigned int m_bgShader;
 	struct {
 		unsigned int ID;
-		float cameraPitch, screenHeight;
+		int projView;
+		int lightMVP;
+		int windowSize;
+		int shadowMap;
+		int screenTexture;
 	} m_waterShader;
 	struct {
 		unsigned int ID;
-		float lightMVP;
+		int lightMVP;
 	} m_shadowShader;
 };

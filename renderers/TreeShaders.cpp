@@ -26,6 +26,9 @@ void TreeShaders::loadResources()
 	m_leafShader.lightSource = glGetUniformLocation(m_leafShader.ID, "lightSource");
 	m_leafShader.time = glGetUniformLocation(m_leafShader.ID, "time");
 	m_leafShader.leafSize = glGetUniformLocation(m_leafShader.ID, "leafSize");
+	m_leafShader.lightMVP = glGetUniformLocation(m_leafShader.ID, "lightMVP");
+	glUniform1i(glGetUniformLocation(m_leafShader.ID, "leafTexture"), 0);
+	glUniform1i(glGetUniformLocation(m_leafShader.ID, "shadowMap"), 1);
 }
 
 void TreeShaders::prepareBranchDraw(const Camera & camera, const sf::Vector3f & lightSource, const glm::mat4 & lightMVP)
@@ -38,7 +41,7 @@ void TreeShaders::prepareBranchDraw(const Camera & camera, const sf::Vector3f & 
 	glUniformMatrix4fv(m_treeShader.lightMVP, 1, GL_FALSE, &lightMVP[0][0]);
 }
 
-void TreeShaders::prepareLeavesDraw(const Camera & camera, const sf::Vector3f & lightSource, const float & leafSize, const float & elapsed)
+void TreeShaders::prepareLeavesDraw(const Camera & camera, const sf::Vector3f & lightSource, const float & leafSize, const float & elapsed, const glm::mat4 & lightMVP)
 {
 	glUseProgram(m_leafShader.ID);
 	glm::mat4 projView = camera.projection * camera.view;
@@ -47,4 +50,5 @@ void TreeShaders::prepareLeavesDraw(const Camera & camera, const sf::Vector3f & 
 	glUniform3f(m_leafShader.lightSource, lightSource.x, lightSource.y, lightSource.z);
 	glUniform1f(m_leafShader.leafSize, leafSize);
 	glUniform1f(m_leafShader.time, elapsed);
+	glUniformMatrix4fv(m_leafShader.lightMVP, 1, GL_FALSE, &lightMVP[0][0]);
 }

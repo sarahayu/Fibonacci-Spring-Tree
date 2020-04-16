@@ -1,10 +1,15 @@
 #version 330 core
-layout (location = 0) in vec2 l_pos;
+layout (location = 0) in vec3 l_pos;
 
-varying vec2 v_texturePos;
+uniform mat4 projView;
+uniform mat4 lightMVP;
+
+varying vec3 v_pos;
+varying vec4 v_lightSpacePos;
 
 void main()
 {
-    gl_Position = vec4(l_pos.x, l_pos.y, 0.0, 1.0); 
-    v_texturePos = (vec2(l_pos.x, l_pos.y) + vec2(1.0,1.0)) / 2.0;
+    gl_Position = projView * vec4(l_pos, 1.0);
+	v_pos = l_pos;
+	v_lightSpacePos = lightMVP * vec4(l_pos, 1.0);
 }

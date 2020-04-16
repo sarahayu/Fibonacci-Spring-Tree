@@ -5,7 +5,7 @@
 #include <glm\glm.hpp>
 #include "generators\SkeletonGenerator.h"
 #include "generators\TreeGenerator.h"
-#include "renderers\TreeRenderer.h"
+#include "renderers\MasterRenderer.h"
 #include "utils\MathUtil.h"
 #include "TreeSkeleton.h"
 #include "RenderSettings.h"

@@ -44,7 +44,7 @@ namespace
 		const float PI2 = 3.14159265f * 2;
 		std::array<BranchVertex, BRANCH_VERT_COUNT> vertices;
 		int offset = 0;
-		const float yNormalAngle = std::atanf(1 - taper);
+		const float yNormalAngle = -std::atanf(1 - taper);
 		const glm::mat4 tiltUp = glm::rotate(glm::mat4(1.f), yNormalAngle, { 0.f,0.f,1.f });
 
 		for (int i = 0; i < CYLINDER_FACE_VERT_COUNT; i++)
@@ -52,7 +52,7 @@ namespace
 			int offset2 = offset++;
 			float x = std::cos(PI2 / CYLINDER_FACE_VERT_COUNT * i),
 				z = std::sin(PI2 / CYLINDER_FACE_VERT_COUNT * i);
-			glm::vec3 normal = tiltUp * glm::vec4{ x,0.f,z,1.f };
+			glm::vec3 normal = glm::vec4{ x,0.f,z,1.f };
 
 			vertices[offset2] = { { x, 0.f, z }, normal };
 			vertices[offset2 + CYLINDER_FACE_VERT_COUNT] = { { x * taper, 1.f, z * taper }, normal };

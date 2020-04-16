@@ -7,11 +7,13 @@ layout (location = 3) in float l_yCenter;
 uniform mat4 projView;
 uniform float time;
 uniform float leafSize;
+uniform mat4 lightMVP;
 
 varying vec2 v_texturePos;
 varying float v_darken;
 varying vec3 v_pos;
 varying vec3 v_normal;
+varying vec4 v_lightSpacePos;
 
 void main()
 {
@@ -24,4 +26,5 @@ void main()
 	v_texturePos = l_texCoord;
 	v_pos = l_pos;
 	v_normal = l_normal;
+	v_lightSpacePos = lightMVP * vec4(l_pos, 1.0);
 }

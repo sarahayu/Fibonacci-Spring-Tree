@@ -5,14 +5,17 @@
 class FBO
 {
 public:
+	FBO(const bool &multiSample = false);
+	virtual ~FBO();
 
-	void rebuild(const sf::Vector2i &dimensions);
-	void destroy();
+	virtual void rebuild(const sf::Vector2i &dimensions);
+	virtual void destroy();
 
 	void bind(const unsigned int &target = GL_FRAMEBUFFER);
 	void bindAndClear();
-	void bindTexture();
+	virtual void bindTexture();
 	const unsigned int getTextureID() const;
+	const sf::Vector2i getDimensions() const;
 
 	void attachDepthTexture();
 	void attachColorTexture();
@@ -24,6 +27,7 @@ public:
 
 private:
 
+	unsigned int m_ms;
 	sf::Vector2i m_dimensions;
 
 	unsigned int m_FBO;
