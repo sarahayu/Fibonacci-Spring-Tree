@@ -3,7 +3,7 @@
 #include <glm\glm.hpp>
 #include "MSFBO.h"
 
-struct Camera;
+class Camera;
 
 class BlurRenderer
 {

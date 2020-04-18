@@ -177,13 +177,11 @@ void Application::update(const float & deltatime)
 	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 10;
 	//float cosY = std::cos(m_input.sceneRotate.y);
 	float radius = m_input.sceneRotate.z;
-	m_camera.pos = { radius * std::cos(theta), 20.f, radius * std::sin(theta) };
-	m_camera.focus = { 0.f, m_input.sceneRotate.y, 0.f };
-	glm::vec3 right = glm::normalize(glm::cross(m_camera.focus - m_camera.pos, { 0.f,1.f,0.f }));
-	glm::vec3 up = glm::normalize(glm::cross(m_camera.focus - m_camera.pos, right)); up.y = -up.y;
-	m_camera.view = glm::lookAt(m_camera.pos, m_camera.focus, up);
-	m_camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 300.f);
-	m_camera.projection = glm::translate(m_camera.projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
+	m_camera.setPos({ radius * std::cos(theta), 20.f, radius * std::sin(theta) });
+	m_camera.setFocusPos({ 0.f, m_input.sceneRotate.y, 0.f });
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 300.f);
+	projection = glm::translate(projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
+	m_camera.setProjection(projection);
 
 }
 

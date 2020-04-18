@@ -1,4 +1,5 @@
 #include "SkeletonGenerator.h"
+#include <random>
 #include "..\utils\MathUtil.h"
 #include "..\TreeSkeleton.h"
 
@@ -6,7 +7,11 @@ namespace
 {
 	const float randomAngle()
 	{
-		return  TWO_PI * (std::rand() % 100) / 100;
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+		static std::uniform_int_distribution<> dis(0, 100);
+
+		return  TWO_PI * (float)(dis(gen)) / 100;
 	}
 }
 

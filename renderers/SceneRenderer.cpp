@@ -11,7 +11,7 @@
 #include "..\RenderSettings.h"
 #include "..\Camera.h"
 #include "..\Tree.h"
-#include "TreeRenderer.h"
+#include "TreeRenderable.h"
 #include "ScreenQuad.h"
 #include "Mesh.h"
 
@@ -35,19 +35,18 @@ void SceneRenderer::loadResources(const sf::Vector2i & screenDimensions)
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-	ShaderUtil::linkShader(m_bgShader, "quad-shader", "background-shader");
-	ShaderUtil::linkShader(m_waterShader.ID, "water-shader");
-	glUseProgram(m_waterShader.ID);
-	m_waterShader.projView = glGetUniformLocation(m_waterShader.ID, "projView");
-	m_waterShader.windowSize = glGetUniformLocation(m_waterShader.ID, "windowSize");
-	m_waterShader.lightMVP = glGetUniformLocation(m_waterShader.ID, "lightMVP");
-	m_waterShader.shadowMap = glGetUniformLocation(m_waterShader.ID, "shadowMap");
-	glUniform1i(m_waterShader.shadowMap, 0);
-	m_waterShader.screenTexture = glGetUniformLocation(m_waterShader.ID, "screenTexture");
-	glUniform1i(m_waterShader.screenTexture, 1);
-	ShaderUtil::linkShader(m_shadowShader.ID, "shadow-shader", "shadow-shader");
-	glUseProgram(m_shadowShader.ID);
-	m_shadowShader.lightMVP = glGetUniformLocation(m_shadowShader.ID, "lightMVP");
+	m_bgShader.loadFromFile("quad-shader", "background-shader");
+	m_waterShader.loadFromFile("water-shader");
+	m_waterShader.use();
+	m_waterUniforms.projView = m_waterShader.getLocation("projView");
+	m_waterUniforms.windowSize = m_waterShader.getLocation("windowSize");
+	m_waterUniforms.lightMVP = m_waterShader.getLocation("lightMVP");
+	m_waterShader.setInt(m_waterShader.getLocation("shadowMap"), 0);
+	m_waterShader.setInt(m_waterShader.getLocation("screenTexture"), 1);
+
+	m_shadowShader.loadFromFile("shadow-shader");
+	m_shadowShader.use();
+	m_shadowUniforms.lightMVP = m_shadowShader.getLocation("lightMVP");
 
 	m_depthBuffer.rebuild({ 1024,1024 });
 	m_depthBuffer.attachDepthTexture();
@@ -70,7 +69,7 @@ void SceneRenderer::reloadFramebuffers(const sf::Vector2i & screenDimensions)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void SceneRenderer::draw(TreeRenderer & componentRenderer, const TreeMesh & treeMesh, const Camera & camera, const RenderSettings & settings)
+void SceneRenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, const RenderSettings & settings)
 {
 	static sf::Clock clock;
 	float elapsed = clock.getElapsedTime().asSeconds();
@@ -81,34 +80,38 @@ void SceneRenderer::draw(TreeRenderer & componentRenderer, const TreeMesh & tree
 	glm::mat4 lightOrtho = glm::ortho(-40.f, 40.f, -40.f, 60.f, 1.f, 100.f);
 	glm::mat4 lightView = glm::lookAt(castSF3<glm::vec3>(getSunPos(settings.sunAzimuth) * 40.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
 	glm::mat4 lightMVP = lightOrtho * lightView;
-	componentRenderer.setShadowInfo(m_depthBuffer.getTextureID(), lightMVP);
-	glUseProgram(m_shadowShader.ID);
-	glUniformMatrix4fv(m_shadowShader.lightMVP, 1, GL_FALSE, &lightMVP[0][0]);
+	treeRenderable.setShadowInfo(m_depthBuffer.getTextureID(), lightMVP);
 
-	componentRenderer.drawTreeRaw(treeMesh);
+	m_shadowShader.use();
+	m_shadowShader.setMat4(m_shadowUniforms.lightMVP, lightMVP);
+
+	treeRenderable.drawTreeRaw();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, m_screenDimensions.x, m_screenDimensions.y);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	glUseProgram(m_bgShader);
+	m_bgShader.use();
 	ScreenQuad::getQuad().draw(false);
 
 	m_accumBuffer.bindAndClear();
 
 	m_blurRenderer.setOptions(3, settings.depthOfField, settings.multisampling);
 
-	m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {
-		glCullFace(GL_FRONT);
-		Camera reflJitter = jitterCam;
-		reflJitter.pos.y = -reflJitter.pos.y;
-		reflJitter.view = glm::lookAt(reflJitter.pos, { camera.focus.x, -camera.focus.y,  camera.focus.z }, { 0.f,1.f,0.f });
-		reflJitter.view = glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.view;
-		componentRenderer.drawTree(treeMesh, reflJitter, settings);
-	});
+	//m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {
+	//	glCullFace(GL_FRONT);
+	//	Camera reflJitter = jitterCam;
+	//	reflJitter.setPos(reflJitter.getPos() * glm::vec3(1.f, -1.f, 1.f));
+	//	reflJitter.setFocusPos(reflJitter.getFocusPos() * glm::vec3(1.f, -1.f, 1.f));
+	//	reflJitter.setView(glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.getView());
+	//	/*reflJitter.pos.y = -reflJitter.pos.y;
+	//	reflJitter.view = glm::lookAt(reflJitter.pos, { camera.focus.x, -camera.focus.y,  camera.focus.z }, { 0.f,1.f,0.f });
+	//	reflJitter.view = glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.view;*/
+	//	treeRenderable.drawTree(reflJitter, settings);
+	//});
 
-	glCullFace(GL_BACK);
+	//glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -116,11 +119,11 @@ void SceneRenderer::draw(TreeRenderer & componentRenderer, const TreeMesh & tree
 	glActiveTexture(GL_TEXTURE1);
 	m_accumBuffer.bindTexture();
 
-	glUseProgram(m_waterShader.ID);
-	glm::mat4 projView = camera.projection * camera.view;
-	glUniformMatrix4fv(m_waterShader.projView, 1, GL_FALSE, &projView[0][0]);
-	glUniform2f(m_waterShader.windowSize, m_screenDimensions.x, m_screenDimensions.y);
-	glUniformMatrix4fv(m_waterShader.lightMVP, 1, GL_FALSE, &lightMVP[0][0]);
+	m_waterShader.use();
+	m_waterShader.setMat4(m_waterUniforms.projView, camera.getProjView());
+	m_waterShader.setVec2(m_waterUniforms.windowSize, castSF2<glm::vec2>((sf::Vector2f)m_screenDimensions));
+	m_waterShader.setMat4(m_waterUniforms.lightMVP, lightMVP);
+
 	glBindVertexArray(m_waterPlane.VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -128,7 +131,7 @@ void SceneRenderer::draw(TreeRenderer & componentRenderer, const TreeMesh & tree
 	m_accumBuffer.bindAndClear();
 
 	m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {
-		componentRenderer.drawTree(treeMesh, jitterCam, settings);
+		treeRenderable.drawTree(jitterCam, settings);
 	});
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -4,7 +4,7 @@
 #include "Branch.h"
 
 class MasterRenderer;
-struct Camera;
+class Camera;
 struct RenderSettings;
 
 class Tree

@@ -2,11 +2,12 @@
 #include <array>
 #include "BlurRenderer.h"
 #include "MSFBO.h"
+#include "Shader.h"
 
-class TreeRenderer;
+class TreeRenderable;
 struct TreeMesh;
 struct RenderSettings;
-struct Camera;
+class Camera;
 
 class SceneRenderer
 {
@@ -15,7 +16,7 @@ public:
 	void loadResources(const sf::Vector2i &screenDimensions);
 	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
 
-	void draw(TreeRenderer &componentRenderer, const TreeMesh &treeMesh, const Camera &camera, const RenderSettings &settings);
+	void draw(TreeRenderable &treeRenderable, const Camera &camera, const RenderSettings &settings);
 
 private:
 
@@ -30,17 +31,17 @@ private:
 		std::array<glm::vec3, 6> vertices;
 	} m_waterPlane;
 
-	unsigned int m_bgShader;
+	Shader m_bgShader;
+
+	Shader m_waterShader;
 	struct {
-		unsigned int ID;
 		int projView;
 		int lightMVP;
 		int windowSize;
-		int shadowMap;
-		int screenTexture;
-	} m_waterShader;
+	} m_waterUniforms;
+
+	Shader m_shadowShader;
 	struct {
-		unsigned int ID;
 		int lightMVP;
-	} m_shadowShader;
+	} m_shadowUniforms;
 };

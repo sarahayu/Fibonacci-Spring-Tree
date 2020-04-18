@@ -1,11 +1,9 @@
 #pragma once
-#include "TreeRenderer.h"
+#include "TreeRenderable.h"
 #include "SceneRenderer.h"
-#include "Mesh.h"
 
 struct RenderSettings;
-struct Camera;
-class Tree;
+class Camera;
 
 class MasterRenderer
 {
@@ -23,10 +21,9 @@ public:
 
 private:
 
-	TreeRenderer m_componentRenderer;
-	SceneRenderer m_blurRenderer;
+	TreeRenderable m_treeRenderable;
+	SceneRenderer m_sceneRenderer;
 
-	TreeMesh m_mesh;
 
 	sf::Clock m_clock;
 };
