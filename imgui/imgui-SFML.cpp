@@ -714,11 +714,11 @@ void RenderDrawLists(ImDrawData* draw_data) {
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
 
 #ifdef GL_VERSION_ES_CL_1_1
-    GLint last_program, last_texture, last_array_buffer,
-        last_element_array_buffer;
+    GLint last_program, last_texture, last_vector_buffer,
+        last_element_vector_buffer;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
+    glGetIntegerv(GL_vector_BUFFER_BINDING, &last_vector_buffer);
+    glGetIntegerv(GL_ELEMENT_vector_BUFFER_BINDING, &last_element_vector_buffer);
 #else
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TRANSFORM_BIT);
 #endif
@@ -730,9 +730,9 @@ void RenderDrawLists(ImDrawData* draw_data) {
     glEnable(GL_SCISSOR_TEST);
     glEnable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_vector);
+    glEnableClientState(GL_COLOR_vector);
+    glEnableClientState(GL_TEXTURE_COORD_vector);
 
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
 
@@ -784,8 +784,8 @@ void RenderDrawLists(ImDrawData* draw_data) {
     }
 #ifdef GL_VERSION_ES_CL_1_1
     glBindTexture(GL_TEXTURE_2D, last_texture);
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_element_array_buffer);
+    glBindBuffer(GL_vector_BUFFER, last_vector_buffer);
+    glBindBuffer(GL_ELEMENT_vector_BUFFER, last_element_vector_buffer);
     glDisable(GL_SCISSOR_TEST);
 #else
     glPopAttrib();

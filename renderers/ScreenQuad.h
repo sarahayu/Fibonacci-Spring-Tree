@@ -1,6 +1,6 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include <array>
+#include <vector>
 
 class ScreenQuad
 {
@@ -13,7 +13,7 @@ private:
 	ScreenQuad();
 
 	struct {
-		std::array<sf::Vector2f, 6> vertices = {
+		std::vector<sf::Vector2f, 6> vertices = {
 			sf::Vector2f{ -1.f,1.f },
 			{ -1.f,-1.f },
 			{ 1.f,-1.f },

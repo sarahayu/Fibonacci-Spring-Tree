@@ -67,7 +67,7 @@
 //   1.10 (2016-04-02) user-defined fabs(); rare memory leak; remove duplicate typedef
 //   1.09 (2016-01-16) warning fix; avoid crash on outofmem; use allocation userdata properly
 //   1.08 (2015-09-13) document stbtt_Rasterize(); fixes for vertical & horizontal edges
-//   1.07 (2015-08-01) allow PackFontRanges to accept arrays of sparse codepoints;
+//   1.07 (2015-08-01) allow PackFontRanges to accept vectors of sparse codepoints;
 //                     variant PackFontRanges to pack and render in separate phases;
 //                     fix stbtt_GetFontOFfsetForIndex (never worked for non-0 input?);
 //                     fixed an assert() bug in the new rasterizer
@@ -621,7 +621,7 @@ typedef struct
 {
    float font_size;
    int first_unicode_codepoint_in_range;  // if non-zero, then the chars are continuous, and this is the first codepoint
-   int *array_of_unicode_codepoints;       // if non-zero, then this is an array of unicode codepoints
+   int *vector_of_unicode_codepoints;       // if non-zero, then this is an vector of unicode codepoints
    int num_chars;
    stbtt_packedchar *chardata_for_range; // output
    unsigned char h_oversample, v_oversample; // don't set these, they're used internally
@@ -669,7 +669,7 @@ STBTT_DEF int  stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, cons
 // fonts, or if you want to pack custom data into a font texture, take a look
 // at the source to of stbtt_PackFontRanges() and create a custom version 
 // using these functions, e.g. call GatherRects multiple times,
-// building up a single array of rects, then call PackRects once,
+// building up a single vector of rects, then call PackRects once,
 // then call RenderIntoRects repeatedly. This may result in a
 // better packing than calling PackFontRanges multiple times
 // (or it may not).
@@ -727,7 +727,7 @@ struct stbtt_fontinfo
    stbtt__buf charstrings;            // the charstring index
    stbtt__buf gsubrs;                 // global charstring subroutines index
    stbtt__buf subrs;                  // private charstring subroutines index
-   stbtt__buf fontdicts;              // array of font dicts
+   stbtt__buf fontdicts;              // vector of font dicts
    stbtt__buf fdselect;               // map from glyph to fontdict
 };
 
@@ -913,8 +913,8 @@ typedef struct
 // rasterize a shape with quadratic beziers into a bitmap
 STBTT_DEF void stbtt_Rasterize(stbtt__bitmap *result,        // 1-channel bitmap to draw into
                                float flatness_in_pixels,     // allowable error of curve in pixels
-                               stbtt_vertex *vertices,       // array of vertices defining shape
-                               int num_verts,                // number of vertices in above array
+                               stbtt_vertex *vertices,       // vector of vertices defining shape
+                               int num_verts,                // number of vertices in above vector
                                float scale_x, float scale_y, // scale applied to input vertices
                                float shift_x, float shift_y, // translation applied to input vertices
                                int x_off, int y_off,         // another translation applied to input
@@ -943,7 +943,7 @@ STBTT_DEF unsigned char * stbtt_GetCodepointSDF(const stbtt_fontinfo *info, floa
 //                                 if positive, > onedge_value is inside; if negative, < onedge_value is inside
 //        width,height      --  output height & width of the SDF bitmap (including padding)
 //        xoff,yoff         --  output origin of the character
-//        return value      --  a 2D array of bytes 0..255, width*height in size
+//        return value      --  a 2D vector of bytes 0..255, width*height in size
 //
 // pixel_dist_scale & onedge_value are a scale & bias that allows you to make
 // optimal use of the limited 0..255 for your application, trading off precision
@@ -1373,7 +1373,7 @@ static int stbtt_InitFont_internal(stbtt_fontinfo *info, unsigned char *data, in
    } else {
       // initialization for CFF / Type2 fonts (OTF)
       stbtt__buf b, topdict, topdictidx;
-      stbtt_uint32 cstype = 2, charstrings = 0, fdarrayoff = 0, fdselectoff = 0;
+      stbtt_uint32 cstype = 2, charstrings = 0, fdvectoroff = 0, fdselectoff = 0;
       stbtt_uint32 cff;
 
       cff = stbtt__find_table(data, fontstart, "CFF ");
@@ -1400,7 +1400,7 @@ static int stbtt_InitFont_internal(stbtt_fontinfo *info, unsigned char *data, in
 
       stbtt__dict_get_ints(&topdict, 17, 1, &charstrings);
       stbtt__dict_get_ints(&topdict, 0x100 | 6, 1, &cstype);
-      stbtt__dict_get_ints(&topdict, 0x100 | 36, 1, &fdarrayoff);
+      stbtt__dict_get_ints(&topdict, 0x100 | 36, 1, &fdvectoroff);
       stbtt__dict_get_ints(&topdict, 0x100 | 37, 1, &fdselectoff);
       info->subrs = stbtt__get_subrs(b, topdict);
 
@@ -1408,10 +1408,10 @@ static int stbtt_InitFont_internal(stbtt_fontinfo *info, unsigned char *data, in
       if (cstype != 2) return 0;
       if (charstrings == 0) return 0;
 
-      if (fdarrayoff) {
+      if (fdvectoroff) {
          // looks like a CID font
          if (!fdselectoff) return 0;
-         stbtt__buf_seek(&b, fdarrayoff);
+         stbtt__buf_seek(&b, fdvectoroff);
          info->fontdicts = stbtt__cff_get_index(&b);
          info->fdselect = stbtt__buf_range(&b, fdselectoff, b.size-fdselectoff);
       }
@@ -1670,8 +1670,8 @@ static int stbtt__GetGlyphShapeTT(const stbtt_fontinfo *info, int glyph_index, s
       next_move = 0;
       flagcount=0;
 
-      // in first pass, we load uninterpreted data into the allocated array
-      // above, shifted to the end of the array so we won't overwrite it when
+      // in first pass, we load uninterpreted data into the allocated vector
+      // above, shifted to the end of the vector so we won't overwrite it when
       // we create our final data starting from the front
 
       off = m - n; // starting offset for uninterpreted data, regardless of how m ends up being calculated
@@ -2323,10 +2323,10 @@ static stbtt_int32  stbtt__GetCoverageIndex(stbtt_uint8 *coverageTable, int glyp
             stbtt_int32 l=0, r=glyphCount-1, m;
             int straw, needle=glyph;
             while (l <= r) {
-                stbtt_uint8 *glyphArray = coverageTable + 4;
+                stbtt_uint8 *glyphvector = coverageTable + 4;
                 stbtt_uint16 glyphID;
                 m = (l + r) >> 1;
-                glyphID = ttUSHORT(glyphArray + 2 * m);
+                glyphID = ttUSHORT(glyphvector + 2 * m);
                 straw = glyphID;
                 if (needle < straw)
                     r = m - 1;
@@ -2340,7 +2340,7 @@ static stbtt_int32  stbtt__GetCoverageIndex(stbtt_uint8 *coverageTable, int glyp
 
         case 2: {
             stbtt_uint16 rangeCount = ttUSHORT(coverageTable + 2);
-            stbtt_uint8 *rangeArray = coverageTable + 4;
+            stbtt_uint8 *rangevector = coverageTable + 4;
 
             // Binary search.
             stbtt_int32 l=0, r=rangeCount-1, m;
@@ -2348,7 +2348,7 @@ static stbtt_int32  stbtt__GetCoverageIndex(stbtt_uint8 *coverageTable, int glyp
             while (l <= r) {
                 stbtt_uint8 *rangeRecord;
                 m = (l + r) >> 1;
-                rangeRecord = rangeArray + 6 * m;
+                rangeRecord = rangevector + 6 * m;
                 strawStart = ttUSHORT(rangeRecord);
                 strawEnd = ttUSHORT(rangeRecord + 2);
                 if (needle < strawStart)
@@ -2379,13 +2379,13 @@ static stbtt_int32  stbtt__GetGlyphClass(stbtt_uint8 *classDefTable, int glyph)
         case 1: {
             stbtt_uint16 startGlyphID = ttUSHORT(classDefTable + 2);
             stbtt_uint16 glyphCount = ttUSHORT(classDefTable + 4);
-            stbtt_uint8 *classDef1ValueArray = classDefTable + 6;
+            stbtt_uint8 *classDef1Valuevector = classDefTable + 6;
 
             if (glyph >= startGlyphID && glyph < startGlyphID + glyphCount)
-                return (stbtt_int32)ttUSHORT(classDef1ValueArray + 2 * (glyph - startGlyphID));
+                return (stbtt_int32)ttUSHORT(classDef1Valuevector + 2 * (glyph - startGlyphID));
 
             // [DEAR IMGUI] Commented to fix static analyzer warning
-            //classDefTable = classDef1ValueArray + 2 * glyphCount;
+            //classDefTable = classDef1Valuevector + 2 * glyphCount;
         } break;
 
         case 2: {
@@ -2473,7 +2473,7 @@ static stbtt_int32  stbtt__GetGlyphGPOSInfoAdvance(const stbtt_fontinfo *info, i
                             stbtt_uint16 pairPosOffset = ttUSHORT(table + 10 + 2 * coverageIndex);
                             stbtt_uint8 *pairValueTable = table + pairPosOffset;
                             stbtt_uint16 pairValueCount = ttUSHORT(pairValueTable);
-                            stbtt_uint8 *pairValueArray = pairValueTable + 2;
+                            stbtt_uint8 *pairValuevector = pairValueTable + 2;
                             // TODO: Support more formats.
                             STBTT_GPOS_TODO_assert(valueFormat1 == 4);
                             if (valueFormat1 != 4) return 0;
@@ -2492,7 +2492,7 @@ static stbtt_int32  stbtt__GetGlyphGPOSInfoAdvance(const stbtt_fontinfo *info, i
                                 stbtt_uint16 secondGlyph;
                                 stbtt_uint8 *pairValue;
                                 m = (l + r) >> 1;
-                                pairValue = pairValueArray + (2 + valueRecordPairSizeInBytes) * m;
+                                pairValue = pairValuevector + (2 + valueRecordPairSizeInBytes) * m;
                                 secondGlyph = ttUSHORT(pairValue);
                                 straw = secondGlyph;
                                 if (needle < straw)
@@ -3985,7 +3985,7 @@ static float stbtt__oversample_shift(int oversample)
    return (float)-(oversample - 1) / (2.0f * (float)oversample);
 }
 
-// rects array must be big enough to accommodate all characters in the given ranges
+// rects vector must be big enough to accommodate all characters in the given ranges
 STBTT_DEF int stbtt_PackFontRangesGatherRects(stbtt_pack_context *spc, const stbtt_fontinfo *info, stbtt_pack_range *ranges, int num_ranges, stbrp_rect *rects)
 {
    int i,j,k;
@@ -3998,7 +3998,7 @@ STBTT_DEF int stbtt_PackFontRangesGatherRects(stbtt_pack_context *spc, const stb
       ranges[i].v_oversample = (unsigned char) spc->v_oversample;
       for (j=0; j < ranges[i].num_chars; ++j) {
          int x0,y0,x1,y1;
-         int codepoint = ranges[i].array_of_unicode_codepoints == NULL ? ranges[i].first_unicode_codepoint_in_range + j : ranges[i].array_of_unicode_codepoints[j];
+         int codepoint = ranges[i].vector_of_unicode_codepoints == NULL ? ranges[i].first_unicode_codepoint_in_range + j : ranges[i].vector_of_unicode_codepoints[j];
          int glyph = stbtt_FindGlyphIndex(info, codepoint);
          if (glyph == 0 && spc->skip_missing) {
             rects[k].w = rects[k].h = 0;
@@ -4041,7 +4041,7 @@ STBTT_DEF void stbtt_MakeGlyphBitmapSubpixelPrefilter(const stbtt_fontinfo *info
    *sub_y = stbtt__oversample_shift(prefilter_y);
 }
 
-// rects array must be big enough to accommodate all characters in the given ranges
+// rects vector must be big enough to accommodate all characters in the given ranges
 STBTT_DEF int stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, const stbtt_fontinfo *info, stbtt_pack_range *ranges, int num_ranges, stbrp_rect *rects)
 {
    int i,j,k, return_value = 1;
@@ -4066,7 +4066,7 @@ STBTT_DEF int stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, const
          if (r->was_packed && r->w != 0 && r->h != 0) {
             stbtt_packedchar *bc = &ranges[i].chardata_for_range[j];
             int advance, lsb, x0,y0,x1,y1;
-            int codepoint = ranges[i].array_of_unicode_codepoints == NULL ? ranges[i].first_unicode_codepoint_in_range + j : ranges[i].array_of_unicode_codepoints[j];
+            int codepoint = ranges[i].vector_of_unicode_codepoints == NULL ? ranges[i].first_unicode_codepoint_in_range + j : ranges[i].vector_of_unicode_codepoints[j];
             int glyph = stbtt_FindGlyphIndex(info, codepoint);
             stbrp_coord pad = (stbrp_coord) spc->padding;
 
@@ -4170,7 +4170,7 @@ STBTT_DEF int stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char *
 {
    stbtt_pack_range range;
    range.first_unicode_codepoint_in_range = first_unicode_codepoint_in_range;
-   range.array_of_unicode_codepoints = NULL;
+   range.vector_of_unicode_codepoints = NULL;
    range.num_chars                   = num_chars_in_range;
    range.chardata_for_range          = chardata_for_range;
    range.font_size                   = font_size;
@@ -4819,7 +4819,7 @@ STBTT_DEF int stbtt_CompareUTF8toUTF16_bigendian(const char *s1, int len1, const
 //                     fix warning from duplicate typedef
 //   1.09 (2016-01-16) warning fix; avoid crash on outofmem; use alloc userdata for PackFontRanges
 //   1.08 (2015-09-13) document stbtt_Rasterize(); fixes for vertical & horizontal edges
-//   1.07 (2015-08-01) allow PackFontRanges to accept arrays of sparse codepoints;
+//   1.07 (2015-08-01) allow PackFontRanges to accept vectors of sparse codepoints;
 //                     allow PackFontRanges to pack and render in separate phases;
 //                     fix stbtt_GetFontOFfsetForIndex (never worked for non-0 input?);
 //                     fixed an assert() bug in the new rasterizer
