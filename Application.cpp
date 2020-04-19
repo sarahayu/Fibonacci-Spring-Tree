@@ -18,7 +18,7 @@ Application::Application()
 	ImGui::SFML::Init(m_window);
 
 	m_input.fibStart = 1;
-	m_input.iterations = 4;
+	m_input.iterations = 12;
 	m_input.angle = 0.94f;
 	m_input.angleDecreaseFactor = 0.97f;
 	m_input.displacementAngle = 0.26f;
@@ -31,7 +31,7 @@ Application::Application()
 	m_input.sunAzimuth = 0.f;
 	m_input.depthOfField = 0.12f;
 	m_input.autoRotate = false;
-	m_input.multisampling = false;
+	m_input.multisampling = true;
 	m_input.sceneRotate = { 0.f,10.f,70.f };
 
 	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });

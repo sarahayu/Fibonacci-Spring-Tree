@@ -70,24 +70,30 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 	indices.clear();
 
 	auto branchVerts = getBranchVertices(settings.branchTaper);
-/*
-	const sf::Vector3f position = branch.start;
-	const sf::Vector2f rotation = branch.rotation;
-	glm::mat4 model = glm::mat4(1.f);
-	model = glm::translate(model, castSF3<glm::vec3>(position));
-	model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
-	model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
-	float shrinkScale = std::pow(settings.branchTaper, branch.generation);
-	model = glm::scale(model, { shrinkScale, branch.length * 1.05f, shrinkScale });
 
-	for (const auto &vert : branchVerts)
-		vertices.push_back({
-		model * glm::vec4(vert.position, 1.f),
-		glm::mat3(glm::transpose(glm::inverse(model))) * vert.normal
-	});*/
+	int indexOffset = 0;
+	for (const Branch &branch : tree.getBranches())
+	{
+		const sf::Vector3f position = branch.start;
+		const sf::Vector2f rotation = branch.rotation;
+		glm::mat4 model = glm::mat4(1.f);
+		model = glm::translate(model, castSF3<glm::vec3>(position));
+		model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
+		model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
+		float shrinkScale = std::pow(settings.branchTaper, branch.generation);
+		model = glm::scale(model, { shrinkScale, branch.length * 1.05f, shrinkScale });
 
-	indices.insert(indices.end(), BRANCH_IND.begin(), BRANCH_IND.end());
-	vertices.insert(vertices.end(), branchVerts.begin(), branchVerts.end());
+		for (const auto &vert : branchVerts)
+			vertices.push_back({
+			model * glm::vec4(vert.position, 1.f),
+			glm::mat3(glm::transpose(glm::inverse(model))) * vert.normal
+		});
+
+		for (const unsigned int &index : BRANCH_IND)
+			indices.push_back(indexOffset + index);
+
+		indexOffset += BRANCH_VERT_COUNT;
+	}
 
 }
 
@@ -99,9 +105,6 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 	auto &indices = mesh.leaves.indices;
 	indices.clear();
 
-	indices.insert(indices.end(), LEAVES_IND.begin(), LEAVES_IND.end());
-	vertices.insert(vertices.end(), LEAVES_VERTS.begin(), LEAVES_VERTS.end());
-/*
 	float faceRotate = 0.f;
 	int indexOffset = 0;
 	for (const sf::Vector3f &position : tree.getLeaves())
@@ -131,6 +134,6 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 			indexOffset += LEAVES_VERTS.size();
 			faceRotate += 130.f;
 		}
-	}*/
+	}
 
 }

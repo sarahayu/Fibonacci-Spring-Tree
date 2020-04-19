@@ -1,5 +1,5 @@
 #pragma once
-#include <vector>
+#include <array>
 #include "renderers\MasterRenderer.h"
 #include "utils\MathUtil.h"
 #include "RenderSettings.h"

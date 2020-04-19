@@ -6,7 +6,7 @@ class TreeSkeleton
 {
 public:
 	typedef std::shared_ptr<TreeSkeleton> Ptr;
-	typedef std::vector<Ptr> vector;
+	typedef std::vector<Ptr> Array;
 
 	TreeSkeleton(const float &rotation = 0.f);
 	void destroy();
