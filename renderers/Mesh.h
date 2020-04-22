@@ -20,9 +20,7 @@ struct Mesh
 {
 	std::vector<T> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<glm::mat4> models;
-	int instances;
-	unsigned int VAO, VBO, modelVBO, EBO;
+	unsigned int VAO, VBO, EBO;
 };
 
 struct TreeMesh

@@ -65,7 +65,6 @@ void TreeRenderable::updateLeavesDrawable(const Tree & tree, const RenderSetting
 	{
 		glDeleteVertexArrays(1, &leaves.VAO);
 		glDeleteBuffers(1, &leaves.VBO);
-		glDeleteBuffers(1, &leaves.modelVBO);
 		glDeleteBuffers(1, &leaves.EBO);
 	}
 
@@ -85,18 +84,6 @@ void TreeRenderable::updateLeavesDrawable(const Tree & tree, const RenderSetting
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(LeafVertex), (void*)(offsetof(LeafVertex, yCenter)));
 	glEnableVertexAttribArray(3);
-
-	glGenBuffers(1, &leaves.modelVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, leaves.modelVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * leaves.models.size(), leaves.models.data(), GL_STATIC_DRAW);
-
-	for (int i = 0; i < 4; i++)
-	{
-		glVertexAttribPointer(4 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 4, (void*)(i * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(4 + i);
-		glVertexAttribDivisor(4 + i, 1);
-	}
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
@@ -111,7 +98,6 @@ void TreeRenderable::updateBranchesDrawable(const Tree & tree, const RenderSetti
 	{
 		glDeleteVertexArrays(1, &branches.VAO);
 		glDeleteBuffers(1, &branches.VBO);
-		glDeleteBuffers(1, &branches.modelVBO);
 		glDeleteBuffers(1, &branches.EBO);
 	}
 
@@ -119,7 +105,6 @@ void TreeRenderable::updateBranchesDrawable(const Tree & tree, const RenderSetti
 	glGenBuffers(1, &branches.VBO);
 	glGenBuffers(1, &branches.EBO);
 	glBindVertexArray(branches.VAO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, branches.VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(BranchVertex) * branches.vertices.size(), branches.vertices.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, branches.EBO);
@@ -128,18 +113,6 @@ void TreeRenderable::updateBranchesDrawable(const Tree & tree, const RenderSetti
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(BranchVertex), (void*)(offsetof(BranchVertex, normal)));
 	glEnableVertexAttribArray(1);
-
-	glGenBuffers(1, &branches.modelVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, branches.modelVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * branches.models.size(), branches.models.data(), GL_STATIC_DRAW);
-
-	for (int i = 0; i < 4; i++)
-	{
-		glVertexAttribPointer(4 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 4, (void*)(i * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(4 + i);
-		glVertexAttribDivisor(4 + i, 1);
-	}
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
@@ -190,7 +163,7 @@ void TreeRenderable::drawTree(const Camera & camera, const RenderSettings & sett
 void TreeRenderable::drawBranches()
 {
 	glBindVertexArray(m_mesh.branches.VAO);
-	glDrawElementsInstanced(GL_TRIANGLES, m_mesh.branches.indices.size(), GL_UNSIGNED_INT, 0, m_mesh.branches.models.size());
+	glDrawElements(GL_TRIANGLES, m_mesh.branches.indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 void TreeRenderable::drawLeaves()
@@ -198,5 +171,5 @@ void TreeRenderable::drawLeaves()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
 	glBindVertexArray(m_mesh.leaves.VAO);
-	glDrawElementsInstanced(GL_TRIANGLES, m_mesh.leaves.indices.size(), GL_UNSIGNED_INT, 0, m_mesh.leaves.models.size());
+	glDrawElements(GL_TRIANGLES, m_mesh.leaves.indices.size(), GL_UNSIGNED_INT, 0);
 }

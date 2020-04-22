@@ -99,19 +99,19 @@ void SceneRenderer::draw(TreeRenderable & treeRenderable, const Camera & camera,
 
 	m_blurRenderer.setOptions(3, settings.depthOfField, settings.multisampling);
 
-	m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {
-		glCullFace(GL_FRONT);
-		Camera reflJitter = jitterCam;
-		reflJitter.setPos(reflJitter.getPos() * glm::vec3(1.f, -1.f, 1.f));
-		reflJitter.setFocusPos(reflJitter.getFocusPos() * glm::vec3(1.f, -1.f, 1.f));
-		reflJitter.setView(glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.getView());
-		/*reflJitter.pos.y = -reflJitter.pos.y;
-		reflJitter.view = glm::lookAt(reflJitter.pos, { camera.focus.x, -camera.focus.y,  camera.focus.z }, { 0.f,1.f,0.f });
-		reflJitter.view = glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.view;*/
-		treeRenderable.drawTree(reflJitter, settings);
-	});
+	//m_blurRenderer.render(m_accumBuffer, camera, [&](const Camera &jitterCam) {
+	//	glCullFace(GL_FRONT);
+	//	Camera reflJitter = jitterCam;
+	//	reflJitter.setPos(reflJitter.getPos() * glm::vec3(1.f, -1.f, 1.f));
+	//	reflJitter.setFocusPos(reflJitter.getFocusPos() * glm::vec3(1.f, -1.f, 1.f));
+	//	reflJitter.setView(glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.getView());
+	//	/*reflJitter.pos.y = -reflJitter.pos.y;
+	//	reflJitter.view = glm::lookAt(reflJitter.pos, { camera.focus.x, -camera.focus.y,  camera.focus.z }, { 0.f,1.f,0.f });
+	//	reflJitter.view = glm::scale(glm::mat4(1.f), { 1.f,-1.f,1.f }) * reflJitter.view;*/
+	//	treeRenderable.drawTree(reflJitter, settings);
+	//});
 
-	glCullFace(GL_BACK);
+	//glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glActiveTexture(GL_TEXTURE0);
