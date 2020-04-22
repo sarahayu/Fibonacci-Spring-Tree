@@ -9,14 +9,14 @@
 namespace
 {
 	const int CYLINDER_FACE_VERT_COUNT = 5,
-		BRANCH_VERT_COUNT = CYLINDER_FACE_VERT_COUNT * 2, 
+		BRANCH_VERT_COUNT = CYLINDER_FACE_VERT_COUNT * 2,
 		BRANCH_IND_COUNT = CYLINDER_FACE_VERT_COUNT * 2 * 6;
-	
+
 	const std::array<LeafVertex, 4> LEAVES_VERTS = {
-		LeafVertex{ glm::vec3{ 0.5f,0.5f,0.f }, glm::vec3{}, glm::vec2{ 1.f,-1.f }, 0.f },
-		{ { 0.5f,-0.5f,0.f },{}, { 1.f,0.f }, 0.f },
-		{ { -0.5f,-0.5f,0.f },{}, { 0.f,0.f }, 0.f },
-		{ { -0.5f,0.5f,0.f },{},  { 0.f,-1.f }, 0.f }
+		LeafVertex{ glm::vec3{ 0.5f,0.5f,0.f }, glm::vec3{0.f, 0.f, 1.f}, glm::vec2{ 1.f,-1.f }, 0.f },
+		{ { 0.5f,-0.5f,0.f },{ 0.f, 0.f, 1.f },{ 1.f,0.f }, 0.f },
+		{ { -0.5f,-0.5f,0.f },{ 0.f, 0.f, 1.f },{ 0.f,0.f }, 0.f },
+		{ { -0.5f,0.5f,0.f },{ 0.f, 0.f, 1.f },{ 0.f,-1.f }, 0.f }
 	};
 	const std::array<unsigned int, 6> LEAVES_IND = { 0,3,2,0,2,1 };
 
@@ -68,11 +68,32 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 	vertices.clear();
 	auto &indices = mesh.branches.indices;
 	indices.clear();
+	auto &models = mesh.branches.models;
+	models.clear();
+	auto &instances = mesh.branches.instances;
+	instances = 0;
 
 	auto branchVerts = getBranchVertices(settings.branchTaper);
+	/*
+	const sf::Vector3f position = branch.start;
+	const sf::Vector2f rotation = branch.rotation;
+	glm::mat4 model = glm::mat4(1.f);
+	model = glm::translate(model, castSF3<glm::vec3>(position));
+	model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
+	model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
+	float shrinkScale = std::pow(settings.branchTaper, branch.generation);
+	model = glm::scale(model, { shrinkScale, branch.length * 1.05f, shrinkScale });
 
-	int indexOffset = 0;
-	for (const Branch &branch : tree.getBranches())
+	for (const auto &vert : branchVerts)
+	vertices.push_back({
+	model * glm::vec4(vert.position, 1.f),
+	glm::mat3(glm::transpose(glm::inverse(model))) * vert.normal
+	});*/
+
+	indices.insert(indices.end(), BRANCH_IND.begin(), BRANCH_IND.end());
+	vertices.insert(vertices.end(), branchVerts.begin(), branchVerts.end());
+
+	for (const Branch branch : tree.getBranches())
 	{
 		const sf::Vector3f position = branch.start;
 		const sf::Vector2f rotation = branch.rotation;
@@ -83,16 +104,8 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 		float shrinkScale = std::pow(settings.branchTaper, branch.generation);
 		model = glm::scale(model, { shrinkScale, branch.length * 1.05f, shrinkScale });
 
-		for (const auto &vert : branchVerts)
-			vertices.push_back({
-			model * glm::vec4(vert.position, 1.f),
-			glm::mat3(glm::transpose(glm::inverse(model))) * vert.normal
-		});
-
-		for (const unsigned int &index : BRANCH_IND)
-			indices.push_back(indexOffset + index);
-
-		indexOffset += BRANCH_VERT_COUNT;
+		models.push_back(model);
+		instances++;
 	}
 
 }
@@ -104,36 +117,66 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 	vertices.clear();
 	auto &indices = mesh.leaves.indices;
 	indices.clear();
+	auto &models = mesh.leaves.models;
+	models.clear();
+	auto &instances = mesh.leaves.instances;
+	instances = 0;
+
+	indices.insert(indices.end(), LEAVES_IND.begin(), LEAVES_IND.end());
+	vertices.insert(vertices.end(), LEAVES_VERTS.begin(), LEAVES_VERTS.end());
 
 	float faceRotate = 0.f;
-	int indexOffset = 0;
 	for (const sf::Vector3f &position : tree.getLeaves())
 	{
 		float density = settings.leafDensity;
-		float outAngle = -(std::atan2f(position.z, position.x) + PI / 2);
+		float outAngle = (std::atan2f(position.z, position.x) - PI / 2);
 
 		for (int i = 0; i < 3; i++)
 		{
 			glm::mat4 model = glm::mat4(1.f);
 			model = glm::translate(model, castSF3<glm::vec3>(position));
-			model = glm::rotate(model, outAngle + glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
+			model = glm::rotate(model, -outAngle + glm::radians((i - 1) * 60.f), { 0.f,1.f,0.f });
 			model = glm::rotate(model, glm::radians(faceRotate), { 0.f,0.f,1.f });
 			model = glm::scale(model, glm::vec3(settings.leafDensity));
 
-			for (const auto &vert : LEAVES_VERTS)
-				vertices.push_back({
-				model * glm::vec4(vert.position, 1.f),
-				glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3(0.f,0.f,-1.f)),
-				vert.texCoord,
-				position.y
-			});
+			models.push_back(model);
+			instances++;
 
-			for (const auto &index : LEAVES_IND)
-				indices.push_back(index + indexOffset);
-
-			indexOffset += LEAVES_VERTS.size();
 			faceRotate += 130.f;
 		}
 	}
+
+
+	/*
+	float faceRotate = 0.f;
+	int indexOffset = 0;
+	for (const sf::Vector3f &position : tree.getLeaves())
+	{
+	float density = settings.leafDensity;
+	float outAngle = -(std::atan2f(position.z, position.x) + PI / 2);
+
+	for (int i = 0; i < 3; i++)
+	{
+	glm::mat4 model = glm::mat4(1.f);
+	model = glm::translate(model, castSF3<glm::vec3>(position));
+	model = glm::rotate(model, outAngle + glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
+	model = glm::rotate(model, glm::radians(faceRotate), { 0.f,0.f,1.f });
+	model = glm::scale(model, glm::vec3(settings.leafDensity));
+
+	for (const auto &vert : LEAVES_VERTS)
+	vertices.push_back({
+	model * glm::vec4(vert.position, 1.f),
+	glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3(0.f,0.f,-1.f)),
+	vert.texCoord,
+	position.y
+	});
+
+	for (const auto &index : LEAVES_IND)
+	indices.push_back(index + indexOffset);
+
+	indexOffset += LEAVES_VERTS.size();
+	faceRotate += 130.f;
+	}
+	}*/
 
 }
