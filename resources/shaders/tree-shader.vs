@@ -8,6 +8,7 @@ uniform mat4 lightMVP;
 varying vec3 v_pos;
 varying vec3 v_normal;
 varying vec4 v_lightSpacePos;
+varying vec2 v_texCoord;		// for shadow shader purposes, leave empty
 
 void main()
 {

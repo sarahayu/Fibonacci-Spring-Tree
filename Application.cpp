@@ -21,17 +21,17 @@ Application::Application()
 	m_input.iterations = 12;
 	m_input.angle = 0.94f;
 	m_input.angleDecreaseFactor = 0.97f;
-	m_input.displacementAngle = 0.26f;
+	m_input.displacementAngle = 0.157f;
 	m_input.length = 3.7f;
 	m_input.lengthDecreaseFactor = 0.97f;
-	m_input.sunReach = 0.15f;
+	m_input.sunReach = 0.3f;
 	m_input.branchTaper = 0.86f;
 	m_input.rotate = 0.f;
-	m_input.leafDensity = 4.6f;
+	m_input.leafDensity = 2.f;
 	m_input.sunAzimuth = 0.f;
 	m_input.depthOfField = 0.12f;
 	m_input.autoRotate = false;
-	m_input.multisampling = true;
+	m_input.multisampling = false;
 	m_input.sceneRotate = { 0.f,10.f,70.f };
 
 	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
@@ -174,7 +174,12 @@ void Application::input(const float & deltatime)
 void Application::update(const float & deltatime)
 {
 	float theta = m_input.sceneRotate.x + m_input.rotate;
-	if (m_input.autoRotate) theta += m_clock.getElapsedTime().asSeconds() / 10;
+	float azimuth = m_input.sunAzimuth;
+	if (m_input.autoRotate)
+	{
+		theta += m_clock.getElapsedTime().asSeconds() / 10;
+		azimuth += m_clock.getElapsedTime().asSeconds() / 5;
+	}
 	//float cosY = std::cos(m_input.sceneRotate.y);
 	float radius = m_input.sceneRotate.z;
 	m_camera.setPos({ radius * std::cos(theta), 20.f, radius * std::sin(theta) });
@@ -183,6 +188,7 @@ void Application::update(const float & deltatime)
 	projection = glm::translate(projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
 	m_camera.setProjection(projection);
 
+	m_input.sunPos = getSunPos(azimuth);
 }
 
 void Application::draw()
@@ -215,6 +221,7 @@ void Application::initWindowOpenGL()
 	settings.majorVersion = 3;
 	settings.minorVersion = 3;
 	settings.depthBits = 24;
+	settings.attributeFlags |= sf::ContextSettings::Debug;
 	settings.stencilBits = 8;
 	settings.sRgbCapable = true;
 	m_window.create(sf::VideoMode(SCR_WIDTH, SCR_HEIGHT), "Fibonacci Spring Tree", sf::Style::Default, settings);

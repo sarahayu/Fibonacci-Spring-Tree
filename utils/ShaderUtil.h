@@ -5,9 +5,8 @@
 #include <sstream>
 #include <fstream>
 
-struct ShaderUtil
+namespace ShaderUtil
 {
-	static void linkShader(unsigned int &ID, const std::string &vertexFile, const std::string &fragmentFile = "");
-private:
-	static void load(const GLenum &shaderType, const std::string &file, unsigned int &shader);
+	void linkShader(unsigned int &ID, const std::string &vertexFile, const std::string &fragmentFile = "");
+	void loadTexture(unsigned int &texture, const std::string &file);
 };

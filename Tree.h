@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-#include "TreeSkeleton.h"
+#include "BranchNode.h"
 #include "Branch.h"
 
 class MasterRenderer;
@@ -19,7 +19,7 @@ public:
 private:
 	void saveLeafPositions();
 
-	TreeSkeleton m_treeSkeleton;
+	BranchNode m_treeSkeleton;
 	TreeBranches m_treeBranches;
 	std::vector<sf::Vector3f> m_leafPositions;
 

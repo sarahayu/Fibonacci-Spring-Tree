@@ -4,6 +4,7 @@
 #include "..\Camera.h"
 #include "..\utils\MathUtil.h"
 #include "ScreenQuad.h"
+#include "..\RenderSettings.h"
 
 void BlurRenderer::reinstantiate(const sf::Vector2i & dimensions)
 {
@@ -15,11 +16,11 @@ void BlurRenderer::reinstantiate(const sf::Vector2i & dimensions)
 	m_buffer2.attachColorTexture();
 }
 
-void BlurRenderer::setOptions(const int & lightrays, const float & aperture, const bool & multisample)
+void BlurRenderer::setOptions(const int & lightrays, const RenderSettings &settings)
 {
 	m_lightRays = lightrays;
-	m_aperture = aperture;
-	m_ms = multisample;
+	m_aperture = settings.depthOfField;
+	m_ms = settings.multisampling;
 }
 
 void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::function<void(const Camera&)>& renderFunc)

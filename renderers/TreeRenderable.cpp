@@ -3,6 +3,7 @@
 #include <GLFW\glfw3.h>
 #include <iostream>
 #include "..\utils\MathUtil.h"
+#include "..\utils\ShaderUtil.h"
 #include "..\RenderSettings.h"
 #include "..\Branch.h"
 #include "TreeMeshMaker.h"
@@ -30,22 +31,7 @@ void TreeRenderable::loadResources()
 	m_leafShader.setInt(m_leafShader.getLocation("leafTexture"), 0);
 	m_leafShader.setInt(m_leafShader.getLocation("shadowMap"), 1);
 
-	auto loadTexture = [&](const std::string &file) {
-
-		sf::Image image;
-		if (!image.loadFromFile(file)) throw std::runtime_error("Could not load file '" + file + "'!");
-
-		glGenTextures(1, &m_leavesTexture);
-		glBindTexture(GL_TEXTURE_2D, m_leavesTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
-		glGenerateMipmap(GL_TEXTURE_2D);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	};
-
-	loadTexture("resources/leaves.png");
+	ShaderUtil::loadTexture(m_leavesTexture, "resources/leaves.png");
 
 }
 
@@ -123,6 +109,11 @@ void TreeRenderable::setShadowInfo(const unsigned int & shadowMap, const glm::ma
 	m_lightMVP = lightMatrix;
 }
 
+const float TreeRenderable::getElapsedTime() const
+{
+	return m_clock.getElapsedTime().asSeconds();
+}
+
 void TreeRenderable::drawTreeRaw()
 {
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -132,24 +123,21 @@ void TreeRenderable::drawTreeRaw()
 
 void TreeRenderable::drawTree(const Camera & camera, const RenderSettings & settings)
 {
-	sf::Vector3f lightSource = getSunPos(settings.sunAzimuth);
-
 	m_treeShader.use();
 	m_treeShader.setMat4(m_treeUniforms.projView, camera.getProjView());
 	m_treeShader.setVec3(m_treeUniforms.cameraPos, camera.getPos());
-	m_treeShader.setVec3(m_treeUniforms.lightSource, castSF3<glm::vec3>(lightSource));
+	m_treeShader.setVec3(m_treeUniforms.lightSource, settings.sunPos);
 	m_treeShader.setMat4(m_treeUniforms.lightMVP, m_lightMVP);
 
 	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
 	drawBranches();
 
-	static sf::Clock clock;
 	m_leafShader.use();
 	m_treeShader.setMat4(m_leafUniforms.projView, camera.getProjView());
 	m_treeShader.setVec3(m_leafUniforms.cameraPos, camera.getPos());
-	m_treeShader.setVec3(m_leafUniforms.lightSource, castSF3<glm::vec3>(lightSource));
+	m_treeShader.setVec3(m_leafUniforms.lightSource, settings.sunPos);
 	m_treeShader.setFloat(m_leafUniforms.leafSize, settings.leafDensity);
-	m_treeShader.setFloat(m_leafUniforms.time, clock.getElapsedTime().asSeconds());
+	m_treeShader.setFloat(m_leafUniforms.time, m_clock.getElapsedTime().asSeconds());
 	m_treeShader.setMat4(m_leafUniforms.lightMVP, m_lightMVP);
 
 	glActiveTexture(GL_TEXTURE1);

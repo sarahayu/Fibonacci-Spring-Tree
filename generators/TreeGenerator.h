@@ -2,12 +2,12 @@
 #include <vector>
 #include <SFML\Graphics.hpp>
 
-class TreeSkeleton;
+class BranchNode;
 struct Branch;
 typedef std::vector<Branch> TreeBranches;
 struct RenderSettings;
 
 struct TreeGenerator
 {
-	static void generate(TreeSkeleton &tree, TreeBranches &branches, const RenderSettings &params);
+	static void generate(BranchNode &tree, TreeBranches &branches, const RenderSettings &params);
 };

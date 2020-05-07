@@ -1,5 +1,5 @@
 #include "TreeGenerator.h"
-#include "..\TreeSkeleton.h"
+#include "..\BranchNode.h"
 #include "..\utils\MathUtil.h"
 #include "..\RenderSettings.h"
 #include "..\Branch.h"
@@ -7,7 +7,14 @@
 
 namespace
 {
-	void addBranch(const Branch &parent, TreeSkeleton::Ptr & child,
+	const bool hasLeaves(const BranchNode::Ptr &branch)
+	{
+		return (!branch->hasChildren()
+			|| (branch->getFirstChild()->hasChildren())
+			&& !branch->getFirstChild()->getFirstChild()->hasChildren());
+	}
+
+	void addBranch(const Branch &parent, BranchNode::Ptr & child,
 		const RenderSettings &params,
 		TreeBranches& branches)
 	{
@@ -30,7 +37,7 @@ namespace
 
 		Branch newBranch = { 
 			parent.end, newBranchPos, newBranchRotation,
-			newParams.length, child->getGeneration(), child->getChildren().size() == 0 };
+			newParams.length, child->getGeneration(), hasLeaves(child) };
 		branches.push_back(newBranch);
 		
 		for (auto &c : child->getChildren())
@@ -40,7 +47,7 @@ namespace
 
 }
 
-void TreeGenerator::generate(TreeSkeleton& tree, TreeBranches& branches, const RenderSettings& params)
+void TreeGenerator::generate(BranchNode& tree, TreeBranches& branches, const RenderSettings& params)
 {
 	branches.clear();
 	sf::Vector3f nextVertex = sf::Vector3f(0.0, params.length, 0.0);

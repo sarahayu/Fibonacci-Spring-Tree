@@ -1,6 +1,6 @@
 #pragma once
 
-class TreeSkeleton;
+class BranchNode;
 
 struct SkeletonGenerator
 {
@@ -11,5 +11,5 @@ struct SkeletonGenerator
 		int iterations;
 	};
 
-	static void generate(TreeSkeleton &tree, const GeneratorParams &params);
+	static void generate(BranchNode &tree, const GeneratorParams &params);
 };

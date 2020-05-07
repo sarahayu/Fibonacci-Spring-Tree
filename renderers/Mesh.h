@@ -1,6 +1,14 @@
 #pragma once
 #include <glm\glm.hpp>
 
+template <class T>
+struct Mesh
+{
+	std::vector<T> vertices;
+	std::vector<unsigned int> indices;
+	unsigned int VAO, VBO, EBO;
+};
+
 struct LeafVertex
 {
 	glm::vec3 position;
@@ -13,14 +21,6 @@ struct BranchVertex
 {
 	glm::vec3 position;
 	glm::vec3 normal;
-};
-
-template <class T>
-struct Mesh
-{
-	std::vector<T> vertices;
-	std::vector<unsigned int> indices;
-	unsigned int VAO, VBO, EBO;
 };
 
 struct TreeMesh

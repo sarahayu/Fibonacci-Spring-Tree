@@ -19,4 +19,5 @@ struct RenderSettings
 	bool autoRotate;
 	bool multisampling;
 	glm::vec3 sceneRotate;
+	glm::vec3 sunPos;
 };

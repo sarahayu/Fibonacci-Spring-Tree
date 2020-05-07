@@ -21,14 +21,17 @@ public:
 	void updateBranchesDrawable(const Tree &tree, const RenderSettings &settings);
 
 	void setShadowInfo(const unsigned int &shadowMap, const glm::mat4 &lightMatrix);
+	const float getElapsedTime() const;
 
+	void drawBranches();
+	void drawLeaves();
 	void drawTreeRaw();
 	void drawTree(const Camera &camera, const RenderSettings &settings);
 
 private:
 
-	void drawBranches();
-	void drawLeaves();
+
+	sf::Clock m_clock;
 
 	TreeMesh m_mesh;
 

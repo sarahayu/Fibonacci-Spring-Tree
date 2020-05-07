@@ -20,7 +20,10 @@ void main()
 	v_darken =  (l_pos.y - (l_yCenter - leafSize * 1.41/2)) / (leafSize * 1.41);
 
 	vec3 sinPos = l_pos;
-	sinPos.y += sin(time * 2 + l_pos.x / 10) / 5;
+	float timeAdjusted = time + sin(time / 2);
+	sinPos.y += sin(time * 2 + l_pos.x / 10) / 10;
+	sinPos.x += sin(timeAdjusted * 5 + (l_pos.z + l_pos.y) / 2) / 20;
+	sinPos.z += sin(timeAdjusted * 5 + (l_pos.x + l_pos.y) / 2) / 20;
 
 	gl_Position = projView * vec4(sinPos, 1.0);
 	v_texturePos = l_texCoord;

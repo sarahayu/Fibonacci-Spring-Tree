@@ -1,32 +1,48 @@
 #include "SkeletonGenerator.h"
 #include <random>
 #include "..\utils\MathUtil.h"
-#include "..\TreeSkeleton.h"
+#include "..\utils\SimplexNoise.h"
+#include "..\BranchNode.h"
+#include <ctime>
 
 namespace
 {
-	const float randomAngle()
+	static int offset = 0;
+
+	struct BranchInfo
 	{
+		int weight;
+		sf::Vector3f noisePos;
+	};
+
+	const float randomAngle(const sf::Vector3f &pos)
+	{
+		const sf::Vector3f newPos = pos * 0.5f + sf::Vector3f(offset, offset, offset);
+		/*
 		static std::random_device rd;
 		static std::mt19937 gen(rd());
 		static std::uniform_int_distribution<> dis(0, 100);
 
-		return  TWO_PI * (float)(dis(gen)) / 100;
+		return  PI * ((float)(dis(gen)) / 100 - 0.5f);*/
+		return  PI * ((float)(SimplexNoise::noise(newPos.x, newPos.y, newPos.z)));
 	}
 }
 
-void SkeletonGenerator::generate(TreeSkeleton & tree, const GeneratorParams & params)
+void SkeletonGenerator::generate(BranchNode & tree, const GeneratorParams & params)
 {
+	offset = std::rand();
 	tree.destroy();
-	std::vector<std::pair<TreeSkeleton::Ptr, int>> branches;
+	std::vector<std::pair<BranchNode::Ptr, BranchInfo>> branches;
 	int fib1 = params.firstRow, fib2 = params.secondRow;
 
-	branches.emplace_back(tree.addChild(0.f, true), 1);
+	branches.emplace_back(tree.addChild(0.f, true), BranchInfo{ 1 });
 
+	sf::Vector3f noisePos(0.f, 1.f, 0.f);
 	for (int i = 0; i < fib2 - 1; i++)
 	{
 		float theta = TWO_PI / (fib2 - 1) * i;
-		branches.emplace_back(tree.addChild(theta, false), 1);
+		branches.emplace_back(tree.addChild(theta, false), BranchInfo{ 1, noisePos });
+		noisePos.x += 1.f;
 	}
 
 	std::vector<int> branchWeightProbabilities;
@@ -36,7 +52,7 @@ void SkeletonGenerator::generate(TreeSkeleton & tree, const GeneratorParams & pa
 
 	for (int i = 1; i < params.iterations; i++)
 	{
-		std::vector<std::pair<TreeSkeleton::Ptr, int>> childBranches;
+		std::vector<std::pair<BranchNode::Ptr, BranchInfo>> childBranches;
 		std::vector<int> newWeightProbs;
 		int newBranchWeight = 0;
 		int branchCount = fib2;
@@ -63,21 +79,24 @@ void SkeletonGenerator::generate(TreeSkeleton & tree, const GeneratorParams & pa
 
 		for (const auto &branch : branches)
 		{
-			if (std::find(weightsChosen.begin(), weightsChosen.end(), branch.second) != weightsChosen.end())
+			if (std::find(weightsChosen.begin(), weightsChosen.end(), branch.second.weight) != weightsChosen.end())
 			{
-				childBranches.emplace_back(branch.first->addChild(randomAngle(), true), branch.second + 1);
-				childBranches.emplace_back(branch.first->addChild(randomAngle(), false), branch.second);
+				sf::Vector3f newNoisePos1 = branch.second.noisePos + sf::Vector3f(0.f, 1.f, 0.f),
+					newNoisePos2 = branch.second.noisePos + sf::Vector3f(0.f, 0.f, 1.f);
+				childBranches.emplace_back(branch.first->addChild(randomAngle(newNoisePos1), true), BranchInfo{ branch.second.weight + 1,newNoisePos1 });
+				childBranches.emplace_back(branch.first->addChild(randomAngle(newNoisePos2), false), BranchInfo{ branch.second.weight, newNoisePos2 });
 				newWeightProbs.insert(newWeightProbs.end(), {
-					branch.second + 1,
-					branch.second
+					branch.second.weight + 1,
+					branch.second.weight
 				});
-				newBranchWeight += branch.second * 2 + 1;
+				newBranchWeight += branch.second.weight * 2 + 1;
 			}
 			else
 			{
-				childBranches.emplace_back(branch.first->addChild(randomAngle(), true), branch.second + 2);
-				newWeightProbs.push_back(branch.second + 2);
-				newBranchWeight += branch.second + 2;
+				sf::Vector3f newNoisePos = branch.second.noisePos + sf::Vector3f(0.f, 1.f, 0.f);
+				childBranches.emplace_back(branch.first->addChild(randomAngle(newNoisePos), true), BranchInfo{ branch.second.weight + 2, newNoisePos });
+				newWeightProbs.push_back(branch.second.weight + 2);
+				newBranchWeight += branch.second.weight + 2;
 			}
 		}
 

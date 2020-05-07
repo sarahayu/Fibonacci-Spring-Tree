@@ -7,7 +7,7 @@ const float PI = 3.14159265f;
 const float TWO_PI = PI * 2;
 
 const sf::Vector3f rotate(const sf::Vector3f &point, const sf::Vector2f &angle);
-const sf::Vector3f getSunPos(const float &azimuth);
+const glm::vec3 getSunPos(const float &azimuth);
 
 template <typename T>
 const T castIM2(const ImVec2 &vec);

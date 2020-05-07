@@ -23,7 +23,7 @@ private:
 	sf::Vector2i m_screenDimensions;
 
 	BlurRenderer m_blurRenderer;
-	FBO m_accumBuffer;
+	FBO m_interBuffer;		// intermediate buffer
 	FBO m_depthBuffer;
 
 	struct {
@@ -40,8 +40,14 @@ private:
 		int windowSize;
 	} m_waterUniforms;
 
-	Shader m_shadowShader;
+	Shader m_branchShadowShader;
 	struct {
 		int lightMVP;
-	} m_shadowUniforms;
+	} m_branchShadowUniforms;
+
+	Shader m_leafShadowShader;
+	struct {
+		int lightMVP;
+		int time;
+	} m_leafShadowUniforms;
 };

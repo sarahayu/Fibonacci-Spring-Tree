@@ -15,10 +15,18 @@ float getShadow(vec3 position)
 	vec3 projCoords = v_lightSpacePos.xyz / v_lightSpacePos.w;
 	projCoords = projCoords * 0.5 + vec3(0.5);
 	if (projCoords.z > 1.0) return 0.0;
-	float shadowDepth = texture(shadowMap, projCoords.xy).r;
 	float posDepth = projCoords.z;
+
+	float shadow = 0.0;
+	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	for (int x = -1; x <= 1; x++)
+		for (int y = -1; y <= 1; y++)
+		{
+			float shadowDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += (posDepth - 0.005 > shadowDepth ? 1.0 : 0.0);
+		}
 	
-	return (posDepth - 0.005 > shadowDepth ? 1.0 : 0.0);
+	return shadow / 9.0;
 }
 
 vec4 fetchColor(sampler2D tex, vec2 pos)
@@ -59,6 +67,7 @@ void main()
     for(int i = 0; i < 9; i++)
 		color.rgb += sampleTex[i] * kernel[i];
 
+	//color = skyColor;
 	color *=  vec4(0.84, 0.92, 0.97, 1.0);
 	color.xyz *= (1.0 - getShadow(v_pos) * 0.5); 
 /*

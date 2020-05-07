@@ -8,7 +8,7 @@ struct Branch
 	sf::Vector2f rotation;
 	float length;
 	int generation;
-	bool endNode;
+	bool hasLeaves;
 };
 
 typedef std::vector<Branch> TreeBranches;

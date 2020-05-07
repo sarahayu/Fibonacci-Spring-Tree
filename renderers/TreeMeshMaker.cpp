@@ -110,20 +110,27 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 	for (const sf::Vector3f &position : tree.getLeaves())
 	{
 		float density = settings.leafDensity;
-		float outAngle = -(std::atan2f(position.z, position.x) + PI / 2);
+		float outAngle = (std::atan2f(position.z, position.x) - PI / 2);
 
 		for (int i = 0; i < 3; i++)
 		{
 			glm::mat4 model = glm::mat4(1.f);
 			model = glm::translate(model, castSF3<glm::vec3>(position));
-			model = glm::rotate(model, outAngle + glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
+			model = glm::rotate(model, -outAngle + glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
+
+			model = glm::translate(model, { 0.f, 1.f, 0.f });
+			model = glm::rotate(model, glm::radians(-10.f), { 1.f,0.f,0.f });
+			model = glm::translate(model, { 0.f, -1.f, 0.f });
+
+			if (i != 1) model = glm::rotate(model, glm::radians(10.f), { 0.f,0.f,1.f });
+			model = glm::translate(model, { 0.f, 0.5f, 0.f });
 			model = glm::rotate(model, glm::radians(faceRotate), { 0.f,0.f,1.f });
 			model = glm::scale(model, glm::vec3(settings.leafDensity));
 
 			for (const auto &vert : LEAVES_VERTS)
 				vertices.push_back({
 				model * glm::vec4(vert.position, 1.f),
-				glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3(0.f,0.f,-1.f)),
+				glm::mat3(glm::transpose(glm::inverse(model))) * glm::normalize(glm::vec3(0.f,0.f,1.f)),
 				vert.texCoord,
 				position.y
 			});

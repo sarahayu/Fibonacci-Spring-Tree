@@ -7,7 +7,7 @@
 #include "generators\TreeGenerator.h"
 #include "renderers\MasterRenderer.h"
 #include "utils\MathUtil.h"
-#include "TreeSkeleton.h"
+#include "BranchNode.h"
 #include "RenderSettings.h"
 #include "Camera.h"
 
@@ -55,6 +55,6 @@ void Tree::saveLeafPositions()
 {
 	m_leafPositions.clear();
 	for (const auto &branch : m_treeBranches)
-		if (branch.endNode)
+		if (branch.hasLeaves)
 			m_leafPositions.push_back(branch.start + (branch.end - branch.start) / 2.f);
 }
