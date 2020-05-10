@@ -77,7 +77,7 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 		const sf::Vector3f position = branch.start;
 		const sf::Vector2f rotation = branch.rotation;
 		glm::mat4 model = glm::mat4(1.f);
-		model = glm::translate(model, castSF3<glm::vec3>(position));
+		model = glm::translate(model, MathUtil::toGLM3(position));
 		model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
 		model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
 		float shrinkScale = std::pow(settings.branchTaper, branch.generation);
@@ -115,7 +115,7 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 		for (int i = 0; i < 3; i++)
 		{
 			glm::mat4 model = glm::mat4(1.f);
-			model = glm::translate(model, castSF3<glm::vec3>(position));
+			model = glm::translate(model, MathUtil::toGLM3(position));
 			model = glm::rotate(model, -outAngle + glm::radians((i-1) * 60.f), { 0.f,1.f,0.f });
 
 			model = glm::translate(model, { 0.f, 1.f, 0.f });

@@ -9,7 +9,7 @@ public:
 
 	virtual void rebuild(const sf::Vector2i &dimensions) override;
 
-	virtual void bindTexture() override;
+	virtual void bindTexture(const unsigned int &attachment) const override;
 
 	void blitTexture();
 

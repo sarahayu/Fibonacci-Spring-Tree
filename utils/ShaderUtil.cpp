@@ -66,17 +66,33 @@ void ShaderUtil::linkShader(unsigned int & ID, const std::string & vertexFile, c
 
 }
 
-void ShaderUtil::loadTexture(unsigned int &texture, const std::string & file)
+void ShaderUtil::loadTexture(unsigned int &texture, const std::string & file, const TexParams & params)
 {
 	sf::Image image;
 	if (!image.loadFromFile(file)) throw std::runtime_error("Could not load file '" + file + "'!");
 
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getSize().x, image.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
+	glTexImage2D(GL_TEXTURE_2D, 0, params.internalFormat, image.getSize().x, image.getSize().y, 0, params.format, params.type, image.getPixelsPtr());
 	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.filter);
+}
+
+void ShaderUtil::createTexture(unsigned int & texture, const glm::vec2 & size, const TexParams & params, const void *pixels)
+{
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, params.internalFormat, size.x, size.y, 0, params.format, params.type, pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.filter);
+}
+
+TexParams::TexParams()
+	: wrap(GL_REPEAT), filter(GL_LINEAR), internalFormat(GL_RGBA), format(GL_RGBA), type(GL_UNSIGNED_BYTE)
+{
 }

@@ -23,7 +23,4 @@ private:
 
 	TreeRenderable m_treeRenderable;
 	SceneRenderer m_sceneRenderer;
-
-
-	sf::Clock m_clock;
 };

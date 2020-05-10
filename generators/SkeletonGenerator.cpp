@@ -18,13 +18,14 @@ namespace
 	const float randomAngle(const sf::Vector3f &pos)
 	{
 		const sf::Vector3f newPos = pos * 0.5f + sf::Vector3f(offset, offset, offset);
+		return  PI * ((float)(SimplexNoise::noise(newPos.x, newPos.y, newPos.z)));
+
 		/*
 		static std::random_device rd;
 		static std::mt19937 gen(rd());
 		static std::uniform_int_distribution<> dis(0, 100);
 
 		return  PI * ((float)(dis(gen)) / 100 - 0.5f);*/
-		return  PI * ((float)(SimplexNoise::noise(newPos.x, newPos.y, newPos.z)));
 	}
 }
 

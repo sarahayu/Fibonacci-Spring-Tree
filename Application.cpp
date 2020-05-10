@@ -18,7 +18,7 @@ Application::Application()
 	ImGui::SFML::Init(m_window);
 
 	m_input.fibStart = 1;
-	m_input.iterations = 12;
+	m_input.iterations = 10;
 	m_input.angle = 0.94f;
 	m_input.angleDecreaseFactor = 0.97f;
 	m_input.displacementAngle = 0.157f;
@@ -131,10 +131,11 @@ void Application::input(const float & deltatime)
 	ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
 	ImGui::Checkbox("Multisampling", &m_input.multisampling);
 
-	ImVec2 winPos = ImGui::GetWindowPos();
-	ImVec2 winSize = ImGui::GetWindowSize();
-	mouseWithin |= sf::FloatRect(castSF2<ImVec2>(winPos),
-		castSF2<ImVec2>(winSize)).contains(sf::Vector2f(currentPos));
+	namespace mu = MathUtil;
+
+	sf::Vector2f winPos = ImGui::GetWindowPos();
+	sf::Vector2f winSize = ImGui::GetWindowSize();
+	mouseWithin |= sf::FloatRect(winPos, winSize).contains(sf::Vector2f(currentPos));
 
 	ImVec2 nextWindowPos(winPos.x, winPos.y + winSize.y);
 
@@ -154,8 +155,7 @@ void Application::input(const float & deltatime)
 
 	winPos = ImGui::GetWindowPos();
 	winSize = ImGui::GetWindowSize();
-	mouseWithin |= sf::FloatRect(castSF2<ImVec2>(winPos),
-		castSF2<ImVec2>(winSize)).contains(sf::Vector2f(currentPos));
+	mouseWithin |= sf::FloatRect(winPos, winSize).contains(sf::Vector2f(currentPos));
 
 	ImGui::End();
 
@@ -188,7 +188,7 @@ void Application::update(const float & deltatime)
 	projection = glm::translate(projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
 	m_camera.setProjection(projection);
 
-	m_input.sunPos = getSunPos(azimuth);
+	m_input.sunPos = MathUtil::getSunPos(azimuth);
 }
 
 void Application::draw()

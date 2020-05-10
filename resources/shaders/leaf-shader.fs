@@ -3,6 +3,7 @@ out vec4 FragColor;
 
 uniform sampler2D leafTexture;
 uniform sampler2D shadowMap;
+uniform sampler2D ssaoTexture;
 
 uniform vec3 cameraPos;
 uniform vec3 lightSource;
@@ -40,7 +41,7 @@ void main()
 	vec4 color = texture(leafTexture, v_texturePos);
 	if (color.a != 1.0) discard;
 
-    float ambientStrength = 0.5;
+    float ambientStrength = texture(ssaoTexture, gl_FragCoord.xy / textureSize(ssaoTexture, 0)).r * 0.3;
 	vec3 lightColor = vec3(0.96, 0.84, 0.65);
     vec3 ambient = ambientStrength * lightColor;
 	vec3 normal = normalize(v_normal);
@@ -51,7 +52,7 @@ void main()
 	vec3 reflectDir = reflect(-lightDir, normal);
 	vec3 specular = pow(max(dot(viewDir, reflectDir), 0.0), 32) * 0.5 * lightColor;
 
-	color.rgb = (ambient + (diffuse + specular) * (1.0 - getShadow(v_pos, lightDir))) * color.rgb;
+	color.rgb = (ambient + (diffuse) * (1.0 - getShadow(v_pos, lightDir))) * color.rgb;
 	color.rgb *= clamp(v_darken, 0.01, 1.0);
 	//color.rgb = mix(color.rgb, skyColor.rgb, clamp((gl_FragCoord.z / gl_FragCoord.w - 70.f) / 100.0, 0.0, 1.0));
 	//color.rgb = vec3(1.0 - getShadow(vec3(v_pos.x, 0.f, v_pos.z), lightDir));

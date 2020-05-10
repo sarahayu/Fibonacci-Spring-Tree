@@ -6,7 +6,7 @@
 #include "ScreenQuad.h"
 #include "..\RenderSettings.h"
 
-void BlurRenderer::reinstantiate(const sf::Vector2i & dimensions)
+void BlurRenderer::reloadFramebuffers(const sf::Vector2i & dimensions)
 {
 	m_buffer.rebuild(dimensions);
 	m_buffer.attachDepthBuffer();
@@ -45,12 +45,12 @@ void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::f
 		{
 			m_buffer.blitTexture();
 			finalBuffer.bind();
-			m_buffer.bindTexture();
+			m_buffer.bindTexture(GL_COLOR_ATTACHMENT0);
 		}
 		else
 		{
 			finalBuffer.bind();
-			m_buffer2.bindTexture();
+			m_buffer2.bindTexture(GL_COLOR_ATTACHMENT0);
 		}
 
 		glDisable(GL_CULL_FACE);
@@ -65,4 +65,6 @@ void BlurRenderer::render(FBO & finalBuffer, const Camera & camera, const std::f
 		glEnable(GL_CULL_FACE);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

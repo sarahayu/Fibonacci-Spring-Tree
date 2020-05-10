@@ -21,7 +21,7 @@ public:
 	void updateBranchesDrawable(const Tree &tree, const RenderSettings &settings);
 
 	void setShadowInfo(const unsigned int &shadowMap, const glm::mat4 &lightMatrix);
-	const float getElapsedTime() const;
+	void setSSAOInfo(const unsigned int &ssaoTex);
 
 	void drawBranches();
 	void drawLeaves();
@@ -29,9 +29,6 @@ public:
 	void drawTree(const Camera &camera, const RenderSettings &settings);
 
 private:
-
-
-	sf::Clock m_clock;
 
 	TreeMesh m_mesh;
 
@@ -55,5 +52,6 @@ private:
 
 	unsigned int m_leavesTexture;
 	unsigned int m_shadowMapTexture;
+	unsigned int m_ssaoTexture;
 	glm::mat4 m_lightMVP;
 };

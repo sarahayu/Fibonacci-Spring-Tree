@@ -4,6 +4,7 @@
 #include <iostream>
 #include "..\utils\MathUtil.h"
 #include "..\utils\ShaderUtil.h"
+#include "..\utils\GlobalClock.h"
 #include "..\RenderSettings.h"
 #include "..\Branch.h"
 #include "TreeMeshMaker.h"
@@ -20,6 +21,8 @@ void TreeRenderable::loadResources()
 	m_treeUniforms.cameraPos = m_treeShader.getLocation("cameraPos");
 	m_treeUniforms.lightSource = m_treeShader.getLocation("lightSource");
 	m_treeUniforms.lightMVP = m_treeShader.getLocation("lightMVP");
+	m_treeShader.setInt(m_treeShader.getLocation("shadowMap"), 0);
+	m_treeShader.setInt(m_treeShader.getLocation("ssaoTexture"), 1);
 
 	m_leafShader.use();
 	m_leafUniforms.projView = m_leafShader.getLocation("projView");
@@ -30,6 +33,7 @@ void TreeRenderable::loadResources()
 	m_leafUniforms.lightMVP = m_leafShader.getLocation("lightMVP");
 	m_leafShader.setInt(m_leafShader.getLocation("leafTexture"), 0);
 	m_leafShader.setInt(m_leafShader.getLocation("shadowMap"), 1);
+	m_leafShader.setInt(m_leafShader.getLocation("ssaoTexture"), 2);
 
 	ShaderUtil::loadTexture(m_leavesTexture, "resources/leaves.png");
 
@@ -109,9 +113,9 @@ void TreeRenderable::setShadowInfo(const unsigned int & shadowMap, const glm::ma
 	m_lightMVP = lightMatrix;
 }
 
-const float TreeRenderable::getElapsedTime() const
+void TreeRenderable::setSSAOInfo(const unsigned int & ssaoTex)
 {
-	return m_clock.getElapsedTime().asSeconds();
+	m_ssaoTexture = ssaoTex;
 }
 
 void TreeRenderable::drawTreeRaw()
@@ -129,7 +133,10 @@ void TreeRenderable::drawTree(const Camera & camera, const RenderSettings & sett
 	m_treeShader.setVec3(m_treeUniforms.lightSource, settings.sunPos);
 	m_treeShader.setMat4(m_treeUniforms.lightMVP, m_lightMVP);
 
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
 	drawBranches();
 
 	m_leafShader.use();
@@ -137,15 +144,19 @@ void TreeRenderable::drawTree(const Camera & camera, const RenderSettings & sett
 	m_treeShader.setVec3(m_leafUniforms.cameraPos, camera.getPos());
 	m_treeShader.setVec3(m_leafUniforms.lightSource, settings.sunPos);
 	m_treeShader.setFloat(m_leafUniforms.leafSize, settings.leafDensity);
-	m_treeShader.setFloat(m_leafUniforms.time, m_clock.getElapsedTime().asSeconds());
+	m_treeShader.setFloat(m_leafUniforms.time, GlobalClock::getClock().getElapsedTime().asSeconds());
 	m_treeShader.setMat4(m_leafUniforms.lightMVP, m_lightMVP);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
 	glDisable(GL_CULL_FACE);
 	drawLeaves();
 
 	glEnable(GL_CULL_FACE);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void TreeRenderable::drawBranches()

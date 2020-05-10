@@ -19,9 +19,9 @@ void MSFBO::rebuild(const sf::Vector2i & dimensions)
 	FBO::rebuild(dimensions);
 }
 
-void MSFBO::bindTexture()
+void MSFBO::bindTexture(const unsigned int & attachment) const
 {
-	m_sample.bindTexture();
+	m_sample.bindTexture(attachment);
 }
 
 void MSFBO::blitTexture()

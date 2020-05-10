@@ -10,7 +10,7 @@ class BlurRenderer
 {
 public:
 	
-	void reinstantiate(const sf::Vector2i &dimensions);
+	void reloadFramebuffers(const sf::Vector2i &dimensions);
 
 	void setOptions(const int &lightrays, const RenderSettings &settings);
 

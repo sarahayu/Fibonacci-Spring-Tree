@@ -12,6 +12,7 @@ public:
 	const int getLocation(const std::string &name);
 
 	void setMat4(const unsigned int &location, const glm::mat4 &mat);
+	void setMat3(const unsigned int &location, const glm::mat3 &mat);
 	void setVec3(const unsigned int &location, const glm::vec3 &vec);
 	void setVec2(const unsigned int &location, const glm::vec2 &vec);
 	void setFloat(const unsigned int &location, const float &value);

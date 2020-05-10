@@ -1,6 +1,8 @@
 #pragma once
 #include <array>
 #include "BlurRenderer.h"
+#include "ShadowRenderer.h"
+#include "SSAORenderer.h"
 #include "MSFBO.h"
 #include "Shader.h"
 
@@ -23,8 +25,10 @@ private:
 	sf::Vector2i m_screenDimensions;
 
 	BlurRenderer m_blurRenderer;
+	ShadowRenderer m_shadowRenderer;
+	SSAORenderer m_ssaoRenderer;
+
 	FBO m_interBuffer;		// intermediate buffer
-	FBO m_depthBuffer;
 
 	struct {
 		unsigned int VAO, VBO;
@@ -39,15 +43,4 @@ private:
 		int lightMVP;
 		int windowSize;
 	} m_waterUniforms;
-
-	Shader m_branchShadowShader;
-	struct {
-		int lightMVP;
-	} m_branchShadowUniforms;
-
-	Shader m_leafShadowShader;
-	struct {
-		int lightMVP;
-		int time;
-	} m_leafShadowUniforms;
 };

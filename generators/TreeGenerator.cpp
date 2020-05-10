@@ -22,8 +22,8 @@ namespace
 		newParams.angle *= params.angleDecreaseFactor;
 		newParams.length *= params.lengthDecreaseFactor;
 		
-		sf::Vector3f newBranchRelativePos = rotate(
-			rotate({
+		sf::Vector3f newBranchRelativePos = MathUtil::rotate(
+			MathUtil::rotate({
 			0.0,newParams.length,0.0
 		}, {
 			child->getRotation(), child->getGrowingStraight() ? newParams.displacementAngle : newParams.angle
