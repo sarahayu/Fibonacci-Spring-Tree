@@ -16,23 +16,7 @@ Application::Application()
 
 	initWindowOpenGL();
 	ImGui::SFML::Init(m_window);
-
-	m_input.fibStart = 1;
-	m_input.iterations = 10;
-	m_input.angle = 0.94f;
-	m_input.angleDecreaseFactor = 0.97f;
-	m_input.displacementAngle = 0.157f;
-	m_input.length = 3.7f;
-	m_input.lengthDecreaseFactor = 0.97f;
-	m_input.sunReach = 0.3f;
-	m_input.branchTaper = 0.86f;
-	m_input.rotate = 0.f;
-	m_input.leafDensity = 2.f;
-	m_input.sunAzimuth = 0.f;
-	m_input.depthOfField = 0.12f;
-	m_input.autoRotate = false;
-	m_input.multisampling = false;
-	m_input.sceneRotate = { 0.f,10.f,70.f };
+	setDefaults();
 
 	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
 	m_tree.createNewTree(m_input);
@@ -71,6 +55,29 @@ void Application::run()
 	std::cout << "\nRun ended!";
 }
 
+void Application::setDefaults()
+{
+	m_input.fibStart = 1;
+	m_input.iterations = 11;
+	m_input.angle = 0.94f;
+	m_input.angleDecreaseFactor = 0.97f;
+	m_input.displacementAngle = 0.157f;
+	m_input.length = 2.2f;
+	m_input.lengthDecreaseFactor = 0.97f;
+	m_input.sunReach = 0.015f;
+	m_input.branchTaper = 0.93f;
+	m_input.rotate = 0.f;
+	m_input.leafDensity = 4.3f;
+	m_input.sunAzimuth = 0.f;
+	m_input.depthOfField = 0.12f;
+	m_input.autoRotate = false;
+	m_input.multisampling = false;
+	m_input.useShadows = true;
+	m_input.useSSAO = true;
+	m_input.useLighting = true;
+	m_input.sceneRotate = { 0.f,10.f,70.f };
+}
+
 void Application::input(const float & deltatime)
 {
 	sf::Event evnt;
@@ -104,12 +111,12 @@ void Application::input(const float & deltatime)
 
 	ImGui::Begin("Realtime tweaks", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
 
-	bool modified = false;
+	static bool modified;
 
 	modified |= ImGui::SliderAngle("Branch Off Angle", &m_input.angle, 0.f, 359.f);
 	modified |= ImGui::SliderFloat("Branch Off Angle Decrease", &m_input.angleDecreaseFactor, 0.01f, 0.99f);
 	modified |= ImGui::SliderAngle("Straight Growth Angle", &m_input.displacementAngle, 0.f);
-	modified |= ImGui::SliderFloat("Branch Length", &m_input.length, 0.1f, 100.f);
+	modified |= ImGui::SliderFloat("Branch Length", &m_input.length, 0.1f, 10.f, "%.3f", 2.f);
 	modified |= ImGui::SliderFloat("Branch Length Decrease", &m_input.lengthDecreaseFactor, 0.01f, 0.99f);
 	modified |= ImGui::SliderFloat("Sun Reach", &m_input.sunReach, 0.f, 0.9f);
 
@@ -122,14 +129,24 @@ void Application::input(const float & deltatime)
 
 	ImGui::SliderFloat("Rotate", &m_input.rotate, -10.f, 10.f);
 
-	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 5.f)
+	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 7.f)
 		|| modified)
 		m_treeRenderer.updateLeavesDrawable(m_tree, m_input);
+
+	modified = false;
 
 	ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
 	ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
 	ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
 	ImGui::Checkbox("Multisampling", &m_input.multisampling);
+	ImGui::SameLine(); ImGui::Checkbox("Use Shadows", &m_input.useShadows);
+	ImGui::SameLine(); ImGui::Checkbox("Use SSAO", &m_input.useSSAO);
+	ImGui::SameLine(); ImGui::Checkbox("Use Lighting", &m_input.useLighting);
+	if (ImGui::Button("Reset Defaults"))
+	{
+		setDefaults();
+		modified |= true;
+	}
 
 	namespace mu = MathUtil;
 

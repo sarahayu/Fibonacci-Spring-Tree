@@ -32,15 +32,18 @@ private:
 
 	TreeMesh m_mesh;
 
-	Shader m_treeShader;
+	Shader m_branchesShader;
 	struct {
 		int projView;
 		int cameraPos;
 		int lightSource;
 		int lightMVP;
-	} m_treeUniforms;
+		int useShadows;
+		int useSSAO;
+		int useLighting;
+	} m_branchesUniforms;
 
-	Shader m_leafShader;
+	Shader m_leavesShader;
 	struct {
 		int projView;
 		int cameraPos;
@@ -48,7 +51,10 @@ private:
 		int time;
 		int leafSize;
 		int lightMVP;
-	} m_leafUniforms;
+		int useShadows;
+		int useSSAO;
+		int useLighting;
+	} m_leavesUniforms;
 
 	unsigned int m_leavesTexture;
 	unsigned int m_shadowMapTexture;

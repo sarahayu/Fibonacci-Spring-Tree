@@ -12,6 +12,7 @@ public:
 
 	void loadResources();
 	void reloadFramebuffers(const sf::Vector2i &screenDimensions);
+	void clear();
 
 	void bindSSAOTexture() const;
 
@@ -30,8 +31,8 @@ private:
 		unsigned int view,
 			invView,
 			projection;
-	} m_branchUniforms;
-	Shader m_branchGeomShader;
+	} m_branchesUniforms;
+	Shader m_branchesGeomShader;
 	struct {
 		unsigned int view,
 			invView,

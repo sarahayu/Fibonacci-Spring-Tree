@@ -79,22 +79,25 @@ void SceneRenderer::reloadFramebuffers(const sf::Vector2i & screenDimensions)
 void SceneRenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, const RenderSettings & settings)
 {
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+	m_blurRenderer.setOptions(3, settings);
 	
-	m_shadowRenderer.draw(treeRenderable, camera, settings);
+	if (settings.useShadows) m_shadowRenderer.draw(treeRenderable, camera, settings);
+	else m_shadowRenderer.clear();
+	
 	glViewport(0, 0, m_screenDimensions.x, m_screenDimensions.y);
 
-	m_ssaoRenderer.draw(treeRenderable, camera, settings);
+	if (settings.useSSAO) m_ssaoRenderer.draw(treeRenderable, camera, settings);
+	else m_ssaoRenderer.clear();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+	/*
 	m_bgShader.use();
 	ScreenQuad::getQuad().draw(false);
 
 	m_interBuffer.bindAndClear();
 
-	m_blurRenderer.setOptions(3, settings);
 
 	glCullFace(GL_FRONT);
 	treeRenderable.drawTree(getReflectionCam(camera), settings);
@@ -113,7 +116,7 @@ void SceneRenderer::draw(TreeRenderable & treeRenderable, const Camera & camera,
 	m_waterShader.setMat4(m_waterUniforms.lightMVP, m_shadowRenderer.getLightMVP());
 
 	glBindVertexArray(m_waterPlane.VAO);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glDrawArrays(GL_TRIANGLES, 0, 6);*/
 
 	glActiveTexture(GL_TEXTURE0);
 	m_interBuffer.bindAndClear();

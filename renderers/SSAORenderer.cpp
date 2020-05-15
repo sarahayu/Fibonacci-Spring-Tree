@@ -16,11 +16,11 @@ namespace
 		std::uniform_real_distribution<float> random(0.f, 1.f);
 		std::default_random_engine gen;
 		std::vector<glm::vec3> ssaoKernel;
-		for (int i = 0; i < 25; i++)
+		for (int i = 0; i < 36; i++)
 		{
 			glm::vec3 sample(random(gen) * 2 - 1, random(gen) * 2 - 1, random(gen));
 			sample = glm::normalize(sample);
-			float scale = (float)i / 25;
+			float scale = (float)i / 36;
 			scale = MathUtil::lerp(0.1f, 1.f, scale * scale);
 			sample *= scale;
 			ssaoKernel.push_back(sample);
@@ -56,11 +56,11 @@ void SSAORenderer::loadResources()
 	params.format = GL_RGB;
 	ShaderUtil::createTexture(m_noiseTex, { 4, 4 }, params, noise.data());
 
-	m_branchGeomShader.loadFromFile("branch-geometry-shader", "geometry-shader");
-	m_branchGeomShader.use();
-	m_branchUniforms.projection = m_branchGeomShader.getLocation("projection");
-	m_branchUniforms.view = m_branchGeomShader.getLocation("view");
-	m_branchUniforms.invView = m_branchGeomShader.getLocation("invView");
+	m_branchesGeomShader.loadFromFile("branches-geometry-shader", "geometry-shader");
+	m_branchesGeomShader.use();
+	m_branchesUniforms.projection = m_branchesGeomShader.getLocation("projection");
+	m_branchesUniforms.view = m_branchesGeomShader.getLocation("view");
+	m_branchesUniforms.invView = m_branchesGeomShader.getLocation("invView");
 
 	m_leavesGeomShader.loadFromFile("leaves-geometry-shader", "geometry-shader");
 	m_leavesGeomShader.use();
@@ -114,6 +114,12 @@ void SSAORenderer::reloadFramebuffers(const sf::Vector2i & screenDimensions)
 	m_blurFBO.attachColorTexture(params);
 }
 
+void SSAORenderer::clear()
+{
+	m_blurFBO.bindAndClear();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void SSAORenderer::bindSSAOTexture() const
 {
 	m_blurFBO.bindTexture(GL_COLOR_ATTACHMENT0);
@@ -122,17 +128,17 @@ void SSAORenderer::bindSSAOTexture() const
 void SSAORenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, const RenderSettings & settings)
 {
 	m_geometryFBO.bindAndClear();
-	m_branchGeomShader.use();
-	m_branchGeomShader.setMat4(m_branchUniforms.view, camera.getView());
-	m_branchGeomShader.setMat3(m_branchUniforms.invView, glm::transpose(glm::inverse(glm::mat3(camera.getView()))));
-	m_branchGeomShader.setMat4(m_branchUniforms.projection, camera.getProjection());
+	m_branchesGeomShader.use();
+	m_branchesGeomShader.setMat4(m_branchesUniforms.view, camera.getView());
+	m_branchesGeomShader.setMat3(m_branchesUniforms.invView, camera.getInvView());
+	m_branchesGeomShader.setMat4(m_branchesUniforms.projection, camera.getProjection());
 	glEnable(GL_CULL_FACE);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	treeRenderable.drawBranches();
 	m_leavesGeomShader.use();
 	m_leavesGeomShader.setMat4(m_leavesUniforms.view, camera.getView());
-	m_leavesGeomShader.setMat3(m_leavesUniforms.invView, glm::transpose(glm::inverse(glm::mat3(camera.getView()))));
+	m_leavesGeomShader.setMat3(m_leavesUniforms.invView, camera.getInvView());
 	m_leavesGeomShader.setMat4(m_leavesUniforms.projection, camera.getProjection());
 	m_leavesGeomShader.setFloat(m_leavesUniforms.time, GlobalClock::getClock() .getElapsedTime().asSeconds());
 	glDisable(GL_CULL_FACE);

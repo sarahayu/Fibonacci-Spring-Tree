@@ -5,14 +5,14 @@ uniform sampler2D posTex;
 uniform sampler2D normalTex;
 uniform sampler2D noiseTex;
 
-uniform vec3 samples[25];
+uniform vec3 samples[36];
 uniform mat4 projection;
 uniform vec2 windowSize;
 
 varying vec2 v_texturePos;
 
-int kernelSize = 25;
-float radius = 3.0;
+int kernelSize = 36;
+float radius = 6.0;
 float bias = 0.01;
 
 void main()

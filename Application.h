@@ -17,6 +17,8 @@ public:
 
 private:
 
+	void setDefaults();
+
 	void input(const float &deltatime);
 	void update(const float &deltatime);
 	void draw();

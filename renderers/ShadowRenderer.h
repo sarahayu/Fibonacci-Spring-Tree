@@ -12,6 +12,7 @@ class ShadowRenderer
 public:
 	void loadResources();
 	void bindShadowTexture() const;
+	void clear();
 	const glm::mat4 getLightMVP() const;
 
 	void draw(TreeRenderable &treeRenderable, const Camera &camera, const RenderSettings &settings);
@@ -23,14 +24,14 @@ private:
 	FBO m_depthBuffer;
 	glm::mat4 m_lightMVP;
 
-	Shader m_branchShadowShader;
+	Shader m_branchesShadowShader;
 	struct {
 		int lightMVP;
-	} m_branchShadowUniforms;
+	} m_branchesShadowUniforms;
 
-	Shader m_leafShadowShader;
+	Shader m_leavesShadowShader;
 	struct {
 		int lightMVP;
 		int time;
-	} m_leafShadowUniforms;
+	} m_leavesShadowUniforms;
 };

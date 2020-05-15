@@ -18,6 +18,9 @@ struct RenderSettings
 	float depthOfField;
 	bool autoRotate;
 	bool multisampling;
+	bool useShadows;
+	bool useSSAO;
+	bool useLighting;
 	glm::vec3 sceneRotate;
 	glm::vec3 sunPos;
 };

@@ -47,7 +47,7 @@ const bool BranchNode::hasChildren() const
 BranchNode::Ptr BranchNode::addChild(const float & rotation, const bool & straightGrowth)
 {
 	Ptr child = std::make_shared<BranchNode>(rotation);
-	child->generation = straightGrowth ? generation + 1 : generation + 3;
+	child->generation = straightGrowth ? generation + 1 : generation + 4;
 	child->straightGrowth = straightGrowth;
 	children.emplace_back(child);
 	return child;

@@ -8,14 +8,14 @@
 
 void ShadowRenderer::loadResources()
 {
-	m_branchShadowShader.loadFromFile("branch-shadow-shader", "shadow-shader");
-	m_branchShadowShader.use();
-	m_branchShadowUniforms.lightMVP = m_branchShadowShader.getLocation("lightMVP");
+	m_branchesShadowShader.loadFromFile("branches-shadow-shader", "shadow-shader");
+	m_branchesShadowShader.use();
+	m_branchesShadowUniforms.lightMVP = m_branchesShadowShader.getLocation("lightMVP");
 
-	m_leafShadowShader.loadFromFile("leaf-shadow-shader", "shadow-shader");
-	m_leafShadowShader.use();
-	m_leafShadowUniforms.lightMVP = m_leafShadowShader.getLocation("lightMVP");
-	m_leafShadowUniforms.time = m_leafShadowShader.getLocation("time");
+	m_leavesShadowShader.loadFromFile("leaves-shadow-shader", "shadow-shader");
+	m_leavesShadowShader.use();
+	m_leavesShadowUniforms.lightMVP = m_leavesShadowShader.getLocation("lightMVP");
+	m_leavesShadowUniforms.time = m_leavesShadowShader.getLocation("time");
 
 	m_depthBuffer.rebuild({ 1024,1024 });
 	m_depthBuffer.attachDepthTexture();
@@ -26,6 +26,12 @@ void ShadowRenderer::loadResources()
 void ShadowRenderer::bindShadowTexture() const
 {
 	m_depthBuffer.bindTexture(GL_DEPTH_ATTACHMENT);
+}
+
+void ShadowRenderer::clear()
+{
+	m_depthBuffer.bindAndClear();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 const glm::mat4 ShadowRenderer::getLightMVP() const
@@ -42,14 +48,14 @@ void ShadowRenderer::draw(TreeRenderable & treeRenderable, const Camera & camera
 
 	treeRenderable.setShadowInfo(m_depthBuffer.getTextureID(GL_DEPTH_ATTACHMENT), m_lightMVP);
 
-	m_branchShadowShader.use();
-	m_branchShadowShader.setMat4(m_branchShadowUniforms.lightMVP, m_lightMVP);
+	m_branchesShadowShader.use();
+	m_branchesShadowShader.setMat4(m_branchesShadowUniforms.lightMVP, m_lightMVP);
 
 	treeRenderable.drawBranches();
 
-	m_leafShadowShader.use();
-	m_leafShadowShader.setMat4(m_leafShadowUniforms.lightMVP, m_lightMVP);
-	m_leafShadowShader.setFloat(m_leafShadowUniforms.time, GlobalClock::getClock().getElapsedTime().asSeconds());
+	m_leavesShadowShader.use();
+	m_leavesShadowShader.setMat4(m_leavesShadowUniforms.lightMVP, m_lightMVP);
+	m_leavesShadowShader.setFloat(m_leavesShadowUniforms.time, GlobalClock::getClock().getElapsedTime().asSeconds());
 
 	treeRenderable.drawLeaves();
 

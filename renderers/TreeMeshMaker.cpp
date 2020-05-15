@@ -5,6 +5,7 @@
 #include "..\Tree.h"
 #include "Mesh.h"
 #include "..\utils\MathUtil.h"
+#include "..\utils\SimplexNoise.h"
 
 namespace
 {
@@ -60,6 +61,12 @@ namespace
 
 		return vertices;
 	}
+
+	const float getRandomScale(const sf::Vector3f &position)
+	{
+		const auto pos = position;
+		return SimplexNoise::noise(position.x, -position.y, position.z) * 0.25f + 0.75f;
+	}
 }
 
 void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const RenderSettings & settings)
@@ -69,7 +76,9 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 	auto &indices = mesh.branches.indices;
 	indices.clear();
 
-	auto branchVerts = getBranchVertices(settings.branchTaper);
+	const float trunkTaper = 0.65f;
+	const auto branchVerts = getBranchVertices(settings.branchTaper);
+	const auto trunkVerts = getBranchVertices(0.65f);
 
 	int indexOffset = 0;
 	for (const Branch &branch : tree.getBranches())
@@ -80,10 +89,13 @@ void TreeMeshMaker::createBranchesMesh(const Tree & tree, TreeMesh & mesh, const
 		model = glm::translate(model, MathUtil::toGLM3(position));
 		model = glm::rotate(model, -rotation.x, { 0.f,1.f,0.f });
 		model = glm::rotate(model, rotation.y, { 0.f,0.f,1.f });
-		float shrinkScale = std::pow(settings.branchTaper, branch.generation);
+
+		const bool isTrunk = branch.generation <= -1;
+		const float shrinkScale = std::pow(isTrunk ? trunkTaper : settings.branchTaper, branch.generation);
 		model = glm::scale(model, { shrinkScale, branch.length * 1.05f, shrinkScale });
 
-		for (const auto &vert : branchVerts)
+		const auto verts = isTrunk ? trunkVerts : branchVerts;
+		for (const auto &vert : verts)
 			vertices.push_back({
 			model * glm::vec4(vert.position, 1.f),
 			glm::mat3(glm::transpose(glm::inverse(model))) * vert.normal
@@ -125,7 +137,7 @@ void TreeMeshMaker::createLeavesMesh(const Tree & tree, TreeMesh & mesh, const R
 			if (i != 1) model = glm::rotate(model, glm::radians(10.f), { 0.f,0.f,1.f });
 			model = glm::translate(model, { 0.f, 0.5f, 0.f });
 			model = glm::rotate(model, glm::radians(faceRotate), { 0.f,0.f,1.f });
-			model = glm::scale(model, glm::vec3(settings.leafDensity));
+			model = glm::scale(model, glm::vec3(settings.leafDensity * getRandomScale(position)));
 
 			for (const auto &vert : LEAVES_VERTS)
 				vertices.push_back({

@@ -13,27 +13,33 @@
 
 void TreeRenderable::loadResources()
 {
-	m_treeShader.loadFromFile("tree-shader");
-	m_leafShader.loadFromFile("leaf-shader");
+	m_branchesShader.loadFromFile("branches-shader");
+	m_leavesShader.loadFromFile("leaves-shader");
 
-	m_treeShader.use();
-	m_treeUniforms.projView = m_treeShader.getLocation("projView");
-	m_treeUniforms.cameraPos = m_treeShader.getLocation("cameraPos");
-	m_treeUniforms.lightSource = m_treeShader.getLocation("lightSource");
-	m_treeUniforms.lightMVP = m_treeShader.getLocation("lightMVP");
-	m_treeShader.setInt(m_treeShader.getLocation("shadowMap"), 0);
-	m_treeShader.setInt(m_treeShader.getLocation("ssaoTexture"), 1);
+	m_branchesShader.use();
+	m_branchesUniforms.projView = m_branchesShader.getLocation("projView");
+	m_branchesUniforms.cameraPos = m_branchesShader.getLocation("cameraPos");
+	m_branchesUniforms.lightSource = m_branchesShader.getLocation("lightSource");
+	m_branchesUniforms.lightMVP = m_branchesShader.getLocation("lightMVP");
+	m_branchesUniforms.useShadows = m_branchesShader.getLocation("useShadows");
+	m_branchesUniforms.useSSAO = m_branchesShader.getLocation("useSSAO");
+	m_branchesUniforms.useLighting = m_branchesShader.getLocation("useLighting");
+	m_branchesShader.setInt(m_branchesShader.getLocation("shadowMap"), 0);
+	m_branchesShader.setInt(m_branchesShader.getLocation("ssaoTexture"), 1);
 
-	m_leafShader.use();
-	m_leafUniforms.projView = m_leafShader.getLocation("projView");
-	m_leafUniforms.cameraPos = m_leafShader.getLocation("cameraPos");
-	m_leafUniforms.lightSource = m_leafShader.getLocation("lightSource");
-	m_leafUniforms.time = m_leafShader.getLocation("time");
-	m_leafUniforms.leafSize = m_leafShader.getLocation("leafSize");
-	m_leafUniforms.lightMVP = m_leafShader.getLocation("lightMVP");
-	m_leafShader.setInt(m_leafShader.getLocation("leafTexture"), 0);
-	m_leafShader.setInt(m_leafShader.getLocation("shadowMap"), 1);
-	m_leafShader.setInt(m_leafShader.getLocation("ssaoTexture"), 2);
+	m_leavesShader.use();
+	m_leavesUniforms.projView = m_leavesShader.getLocation("projView");
+	m_leavesUniforms.cameraPos = m_leavesShader.getLocation("cameraPos");
+	m_leavesUniforms.lightSource = m_leavesShader.getLocation("lightSource");
+	m_leavesUniforms.time = m_leavesShader.getLocation("time");
+	m_leavesUniforms.leafSize = m_leavesShader.getLocation("leafSize");
+	m_leavesUniforms.lightMVP = m_leavesShader.getLocation("lightMVP");
+	m_leavesUniforms.useShadows = m_leavesShader.getLocation("useShadows");
+	m_leavesUniforms.useSSAO = m_leavesShader.getLocation("useSSAO");
+	m_leavesUniforms.useLighting = m_leavesShader.getLocation("useLighting");
+	m_leavesShader.setInt(m_leavesShader.getLocation("leafTexture"), 0);
+	m_leavesShader.setInt(m_leavesShader.getLocation("shadowMap"), 1);
+	m_leavesShader.setInt(m_leavesShader.getLocation("ssaoTexture"), 2);
 
 	ShaderUtil::loadTexture(m_leavesTexture, "resources/leaves.png");
 
@@ -127,11 +133,14 @@ void TreeRenderable::drawTreeRaw()
 
 void TreeRenderable::drawTree(const Camera & camera, const RenderSettings & settings)
 {
-	m_treeShader.use();
-	m_treeShader.setMat4(m_treeUniforms.projView, camera.getProjView());
-	m_treeShader.setVec3(m_treeUniforms.cameraPos, camera.getPos());
-	m_treeShader.setVec3(m_treeUniforms.lightSource, settings.sunPos);
-	m_treeShader.setMat4(m_treeUniforms.lightMVP, m_lightMVP);
+	m_branchesShader.use();
+	m_branchesShader.setMat4(m_branchesUniforms.projView, camera.getProjView());
+	m_branchesShader.setVec3(m_branchesUniforms.cameraPos, camera.getPos());
+	m_branchesShader.setVec3(m_branchesUniforms.lightSource, settings.sunPos);
+	m_branchesShader.setMat4(m_branchesUniforms.lightMVP, m_lightMVP);
+	m_branchesShader.setInt(m_branchesUniforms.useShadows, (int)settings.useShadows);
+	m_branchesShader.setInt(m_branchesUniforms.useSSAO, (int)settings.useSSAO);
+	m_branchesShader.setInt(m_branchesUniforms.useLighting, (int)settings.useLighting);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
@@ -139,13 +148,16 @@ void TreeRenderable::drawTree(const Camera & camera, const RenderSettings & sett
 	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
 	drawBranches();
 
-	m_leafShader.use();
-	m_treeShader.setMat4(m_leafUniforms.projView, camera.getProjView());
-	m_treeShader.setVec3(m_leafUniforms.cameraPos, camera.getPos());
-	m_treeShader.setVec3(m_leafUniforms.lightSource, settings.sunPos);
-	m_treeShader.setFloat(m_leafUniforms.leafSize, settings.leafDensity);
-	m_treeShader.setFloat(m_leafUniforms.time, GlobalClock::getClock().getElapsedTime().asSeconds());
-	m_treeShader.setMat4(m_leafUniforms.lightMVP, m_lightMVP);
+	m_leavesShader.use();
+	m_leavesShader.setMat4(m_leavesUniforms.projView, camera.getProjView());
+	m_leavesShader.setVec3(m_leavesUniforms.cameraPos, camera.getPos());
+	m_leavesShader.setVec3(m_leavesUniforms.lightSource, settings.sunPos);
+	m_leavesShader.setFloat(m_leavesUniforms.leafSize, settings.leafDensity);
+	m_leavesShader.setFloat(m_leavesUniforms.time, GlobalClock::getClock().getElapsedTime().asSeconds());
+	m_leavesShader.setMat4(m_leavesUniforms.lightMVP, m_lightMVP);
+	m_leavesShader.setInt(m_leavesUniforms.useShadows, (int)settings.useShadows);
+	m_leavesShader.setInt(m_leavesUniforms.useSSAO, (int)settings.useSSAO);
+	m_leavesShader.setInt(m_leavesUniforms.useLighting, (int)settings.useLighting);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_shadowMapTexture);
