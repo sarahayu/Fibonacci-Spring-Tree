@@ -80,8 +80,7 @@ void SceneRenderer::draw(const RenderableCollection & objects, const Camera & ca
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	renderInOrientation(objects, camera, settings, true);
 
-	//m_interBuffer.bindTexture(GL_COLOR_ATTACHMENT0);
-	m_shadowRenderer.bindShadowTexture();
+	m_interBuffer.bindTexture(GL_COLOR_ATTACHMENT0);
 	ScreenQuad::getQuad().draw();
 }
 

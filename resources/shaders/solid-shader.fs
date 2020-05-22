@@ -24,7 +24,7 @@ float getShadow(vec3 position, vec3 lightDir)
 	projCoords = projCoords * 0.5 + vec3(0.5);
 	if (projCoords.z > 1.0) return 0.0;
 	float posDepth = projCoords.z;
-	float bias = max(0.001, 0.005 * (1.0 - dot(v_normal, lightDir)));
+	float bias = max(0.001, 0.02 * (1.0 - dot(v_normal, lightDir)));
 
 	float shadow = 0.0;
 	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);

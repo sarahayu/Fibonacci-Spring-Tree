@@ -70,7 +70,7 @@ void Application::setDefaults()
 	m_input.leafDensity = 4.3f;
 	m_input.sunAzimuth = 0.f;
 	m_input.depthOfField = 0.12f;
-	m_input.ssaoRadius = 0.5f;
+	m_input.ssaoRadius = 0.8f;
 	m_input.autoRotate = false;
 	m_input.multisampling = false;
 	m_input.useShadows = true;

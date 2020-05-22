@@ -41,7 +41,6 @@ const glm::mat4 ShadowRenderer::getLightMVP() const
 
 void ShadowRenderer::draw(Model & scene, const Camera & camera, const RenderSettings & settings)
 {
-	glDisable(GL_CLIP_DISTANCE0);
 	m_lightMVP = calculateLightMVP(settings.sunPos);
 
 	glViewport(0, 0, 2048, 2048);
@@ -67,7 +66,7 @@ void ShadowRenderer::draw(Model & scene, const Camera & camera, const RenderSett
 
 const glm::mat4 ShadowRenderer::calculateLightMVP(const glm::vec3 sunPosition)
 {
-	const float size = 30.f;
+	const float size = 150.f;
 	glm::mat4 lightOrtho = glm::ortho(-size, size, -size, size, 1.f, 300.f);
 	glm::mat4 lightView = glm::lookAt(sunPosition * 100.f, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
 
