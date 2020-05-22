@@ -1,7 +1,7 @@
 #version 330 core
 layout (location = 0) in vec2 l_pos;
 
-varying vec2 v_texturePos;
+out vec2 v_texturePos;
 
 void main()
 {

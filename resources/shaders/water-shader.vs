@@ -5,8 +5,8 @@ uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 lightMVP;
 
-varying vec3 v_pos;
-varying vec4 v_lightSpacePos;
+out vec3 v_pos;
+out vec4 v_lightSpacePos;
 
 void main()
 {

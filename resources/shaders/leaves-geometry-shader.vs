@@ -8,9 +8,9 @@ uniform mat3 invView;
 uniform mat4 projection;
 uniform float time;
 
-varying vec3 v_pos;
-varying vec3 v_normal;
-varying vec2 v_texCoord;
+out vec3 v_pos;
+out vec3 v_normal;
+out vec2 v_texCoord;
 
 void main()
 {

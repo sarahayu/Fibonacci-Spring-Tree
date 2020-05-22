@@ -10,11 +10,11 @@ uniform float time;
 uniform float leafSize;
 uniform mat4 lightMVP;
 
-varying vec2 v_texturePos;
-varying float v_darken;
-varying vec3 v_pos;
-varying vec3 v_normal;
-varying vec4 v_lightSpacePos;
+out vec2 v_texturePos;
+out float v_darken;
+out vec3 v_pos;
+out vec3 v_normal;
+out vec4 v_lightSpacePos;
 
 void main()
 {

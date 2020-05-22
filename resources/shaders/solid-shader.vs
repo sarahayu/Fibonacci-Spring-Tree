@@ -7,13 +7,13 @@ uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 lightMVP;
 
-varying vec3 v_pos;
-varying vec3 v_normal;
-varying vec4 v_lightSpacePos;
-varying vec3 v_color;
-flat varying uint v_colorOffset;
+out vec3 v_pos;
+out vec3 v_normal;
+out vec4 v_lightSpacePos;
+out vec3 v_color;
+flat out uint v_colorOffset;
 
-const vec3 colors[2] = {vec3(54.f / 255, 26.f / 255, 13.f / 255), vec3(0.23, 0.25, 0.28)};
+const vec3 colors[2] = vec3[](vec3(54.f / 255, 26.f / 255, 13.f / 255), vec3(0.23, 0.25, 0.28));
 
 void main()
 {

@@ -5,7 +5,7 @@ layout (location = 2) in vec2 l_texCoord;;
 uniform mat4 lightMVP;
 uniform float time;
 
-varying vec2 v_texCoord;
+out vec2 v_texCoord;
 
 void main()
 {

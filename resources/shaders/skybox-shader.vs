@@ -1,7 +1,7 @@
 #version 330 core
 layout (location = 0) in vec3 l_pos;
 
-varying vec3 v_texturePos;
+out vec3 v_texturePos;
 
 uniform mat4 projection;
 uniform mat4 view;

@@ -5,8 +5,8 @@ uniform sampler2D screenTexture;
 uniform sampler2D shadowMap;
 uniform vec2 windowSize;
 
-varying vec3 v_pos;
-varying vec4 v_lightSpacePos;
+in vec3 v_pos;
+in vec4 v_lightSpacePos;
 
 vec4 skyColor = vec4(0.96, 0.84, 0.65, 1.0);
 

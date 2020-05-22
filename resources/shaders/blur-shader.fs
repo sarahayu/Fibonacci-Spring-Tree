@@ -1,7 +1,7 @@
 #version 330 core
 out vec4 FragColor;
   
-varying vec2 v_texturePos;
+in vec2 v_texturePos;
   
 uniform sampler2D ssaoInput;
 

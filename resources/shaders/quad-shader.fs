@@ -4,7 +4,7 @@ out vec4 FragColor;
 uniform sampler2D screenTexture;
 //uniform float mode;
 
-varying vec2 v_texturePos;
+in vec2 v_texturePos;
 
 void main()
 {

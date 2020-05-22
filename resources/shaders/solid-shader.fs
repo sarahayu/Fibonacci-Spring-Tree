@@ -9,11 +9,11 @@ uniform bool useShadows;
 uniform bool useSSAO;
 uniform bool useLighting;
 
-varying vec3 v_pos;
-varying vec3 v_normal;
-varying vec4 v_lightSpacePos;
-varying vec3 v_color;
-flat varying uint v_colorOffset;
+in vec3 v_pos;
+in vec3 v_normal;
+in vec4 v_lightSpacePos;
+in vec3 v_color;
+flat in uint v_colorOffset;
 
 vec4 skyColor = vec4(0.96, 0.84, 0.65, 1.0);
 vec3 lightColor = vec3(0.96, 0.84, 0.65);

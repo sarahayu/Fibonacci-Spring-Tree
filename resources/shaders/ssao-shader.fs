@@ -10,7 +10,7 @@ uniform mat4 projection;
 uniform vec2 windowSize;
 uniform float radius;
 
-varying vec2 v_texturePos;
+in vec2 v_texturePos;
 
 int kernelSize = 36;
 float bias = 0.1;

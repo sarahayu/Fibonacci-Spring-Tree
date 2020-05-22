@@ -9,34 +9,16 @@ WaterRenderable::WaterRenderable(const RenderSettings & settings)
 
 void WaterRenderable::createMesh()
 {
-	const float width = 200.f;
-	const int cells = 150;
-	const int cellsPlusOne = cells + 1;
-	const float cellWidth = width / cells;
+	m_water.vertices.insert(m_water.vertices.end(), {
+		{ -200.f,3.f,-200.f },
+		{ -200.f,3.f,200.f },
+		{ 200.f,3.f,200.f },
+		{ 200.f,3.f,-200.f }
+	});
 
-	for (int z = 0; z < cellsPlusOne; z++)
-		for (int x = 0; x < cellsPlusOne; x++)
-		{
-			const float X = -width / 2 + x * cellWidth,
-				Z = -width / 2 + z * cellWidth;
-			m_water.vertices.push_back({ X, 3.f, Z });
-		}
-
-	for (int i = 0; i < cells; i++)
-		for (int j = 0; j < cells; j++)
-		{
-			auto &indices = m_water.indices;
-
-			unsigned int v0 = i * cellsPlusOne + j,
-				v1 = (i + 1) * cellsPlusOne + j,
-				v2 = (i + 1) * cellsPlusOne + j + 1,
-				v3 = i * cellsPlusOne + j + 1;
-
-			indices.insert(indices.end(), {
-				v0, v1, v2,
-				v0, v2, v3
-			});
-		}
+	m_water.indices.insert(m_water.indices.end(), {
+		0,1,2,0,2,3
+	});
 
 	MeshHelper::GLsetup(m_water);
 }

@@ -1,7 +1,7 @@
 #version 330 core
 out vec4 FragColor;
 
-varying vec3 v_texturePos;
+in vec3 v_texturePos;
 
 uniform samplerCube skybox;
 

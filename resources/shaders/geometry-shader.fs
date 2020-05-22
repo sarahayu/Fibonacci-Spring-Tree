@@ -4,9 +4,9 @@ layout (location = 1) out vec4 Normal;
 
 uniform sampler2D tex;
 
-varying vec3 v_pos;
-varying vec3 v_normal;
-varying vec2 v_texCoord;
+in vec3 v_pos;
+in vec3 v_normal;
+in vec2 v_texCoord;
 
 void main()
 {    
