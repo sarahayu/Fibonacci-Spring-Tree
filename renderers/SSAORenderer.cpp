@@ -4,7 +4,7 @@
 #include "..\utils\GlobalClock.h"
 #include "..\RenderSettings.h"
 #include "..\Camera.h"
-#include "TreeRenderable.h"
+#include "Model.h"
 #include "ScreenQuad.h"
 #include <random>
 #include <glm\glm.hpp>
@@ -56,11 +56,11 @@ void SSAORenderer::loadResources()
 	params.format = GL_RGB;
 	ShaderUtil::createTexture(m_noiseTex, { 4, 4 }, params, noise.data());
 
-	m_branchesGeomShader.loadFromFile("branches-geometry-shader", "geometry-shader");
-	m_branchesGeomShader.use();
-	m_branchesUniforms.projection = m_branchesGeomShader.getLocation("projection");
-	m_branchesUniforms.view = m_branchesGeomShader.getLocation("view");
-	m_branchesUniforms.invView = m_branchesGeomShader.getLocation("invView");
+	m_solidGeomShader.loadFromFile("solid-geometry-shader", "geometry-shader");
+	m_solidGeomShader.use();
+	m_solidUniforms.projection = m_solidGeomShader.getLocation("projection");
+	m_solidUniforms.view = m_solidGeomShader.getLocation("view");
+	m_solidUniforms.invView = m_solidGeomShader.getLocation("invView");
 
 	m_leavesGeomShader.loadFromFile("leaves-geometry-shader", "geometry-shader");
 	m_leavesGeomShader.use();
@@ -81,6 +81,7 @@ void SSAORenderer::loadResources()
 	//m_ssaoUniforms.samples = m_ssaoShader.getLocation("samples");
 	m_ssaoUniforms.projection = m_ssaoShader.getLocation("projection");
 	m_ssaoUniforms.windowSize = m_ssaoShader.getLocation("windowSize");
+	m_ssaoUniforms.radius = m_ssaoShader.getLocation("radius");
 
 	m_blurShader.loadFromFile("quad-shader", "blur-shader");
 }
@@ -125,25 +126,40 @@ void SSAORenderer::bindSSAOTexture() const
 	m_blurFBO.bindTexture(GL_COLOR_ATTACHMENT0);
 }
 
-void SSAORenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, const RenderSettings & settings)
+void SSAORenderer::draw(Model & scene, const Camera & camera, const RenderSettings & settings)
 {
 	m_geometryFBO.bindAndClear();
-	m_branchesGeomShader.use();
-	m_branchesGeomShader.setMat4(m_branchesUniforms.view, camera.getView());
-	m_branchesGeomShader.setMat3(m_branchesUniforms.invView, camera.getInvView());
-	m_branchesGeomShader.setMat4(m_branchesUniforms.projection, camera.getProjection());
+	m_solidGeomShader.use();
+	m_solidGeomShader.setMat4(m_solidUniforms.view, camera.getView());
+	m_solidGeomShader.setMat3(m_solidUniforms.invView, camera.getInvView());
+	m_solidGeomShader.setMat4(m_solidUniforms.projection, camera.getProjection());
 	glEnable(GL_CULL_FACE);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	treeRenderable.drawBranches();
+
+	if (scene.onReflectionPass())
+	{
+		glEnable(GL_CLIP_DISTANCE0);
+		glCullFace(GL_FRONT);
+	}
+	scene.renderBasic(Model::SOLID_MESH);
+
+	// disable clipping to avoid z-fighting?
+	glDisable(GL_CLIP_DISTANCE0);
+	scene.renderBasic(Model::WATER_MESH);
+	
 	m_leavesGeomShader.use();
 	m_leavesGeomShader.setMat4(m_leavesUniforms.view, camera.getView());
 	m_leavesGeomShader.setMat3(m_leavesUniforms.invView, camera.getInvView());
 	m_leavesGeomShader.setMat4(m_leavesUniforms.projection, camera.getProjection());
 	m_leavesGeomShader.setFloat(m_leavesUniforms.time, GlobalClock::getClock() .getElapsedTime().asSeconds());
+
 	glDisable(GL_CULL_FACE);
-	treeRenderable.drawLeaves();
+	if (scene.onReflectionPass()) glEnable(GL_CLIP_DISTANCE0);
+	scene.renderBasic(Model::LEAVES_MESH);
 	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glDisable(GL_CLIP_DISTANCE0);
 
 	m_ssaoFBO.bindAndClear();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -156,6 +172,7 @@ void SSAORenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, 
 
 	m_ssaoShader.use();
 	m_ssaoShader.setMat4(m_ssaoUniforms.projection, camera.getProjection());
+	m_ssaoShader.setFloat(m_ssaoUniforms.radius, settings.ssaoRadius);
 	m_ssaoShader.setVec2(m_ssaoUniforms.windowSize, MathUtil::toGLM2(m_screenDimensions));
 
 	ScreenQuad::getQuad().draw(false);
@@ -168,8 +185,8 @@ void SSAORenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, 
 	m_blurShader.use();
 	ScreenQuad::getQuad().draw(false);
 
-	treeRenderable.setSSAOInfo(m_blurFBO.getTextureID(GL_COLOR_ATTACHMENT0));
-
+	scene.setSSAOInfo(m_blurFBO.getTextureID(GL_COLOR_ATTACHMENT0));
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);

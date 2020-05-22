@@ -16,11 +16,17 @@ struct RenderSettings
 	float leafDensity;
 	float sunAzimuth;
 	float depthOfField;
+	float ssaoRadius;
 	bool autoRotate;
 	bool multisampling;
 	bool useShadows;
 	bool useSSAO;
 	bool useLighting;
+	bool hideGUI;
+	bool renderBackground;
+
 	glm::vec3 sceneRotate;
 	glm::vec3 sunPos;
+	bool lines;
+	float trueSunAzimuth;
 };

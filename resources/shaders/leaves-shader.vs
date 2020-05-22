@@ -4,7 +4,8 @@ layout (location = 1) in vec3 l_normal;
 layout (location = 2) in vec2 l_texCoord;;
 layout (location = 3) in float l_yCenter;
 
-uniform mat4 projView;
+uniform mat4 projection;
+uniform mat4 view;
 uniform float time;
 uniform float leafSize;
 uniform mat4 lightMVP;
@@ -25,7 +26,9 @@ void main()
 	sinPos.x += sin(timeAdjusted * 5 + (l_pos.z + l_pos.y) / 2) / 20;
 	sinPos.z += sin(timeAdjusted * 5 + (l_pos.x + l_pos.y) / 2) / 20;
 
-	gl_Position = projView * vec4(sinPos, 1.0);
+	gl_Position = projection * view * vec4(sinPos, 1.0);
+	gl_ClipDistance[0] = dot( vec4(l_pos,1.0), vec4(0.0,1.0,0.0,-2.0));
+
 	v_texturePos = l_texCoord;
 	v_pos = l_pos;
 	v_normal = l_normal;

@@ -2,7 +2,7 @@
 #include "FBO.h"
 #include "Shader.h"
 
-class TreeRenderable;
+class Model;
 struct TreeMesh;
 struct RenderSettings;
 class Camera;
@@ -15,7 +15,7 @@ public:
 	void clear();
 	const glm::mat4 getLightMVP() const;
 
-	void draw(TreeRenderable &treeRenderable, const Camera &camera, const RenderSettings &settings);
+	void draw(Model &scene, const Camera &camera, const RenderSettings &settings);
 
 private:
 
@@ -24,10 +24,10 @@ private:
 	FBO m_depthBuffer;
 	glm::mat4 m_lightMVP;
 
-	Shader m_branchesShadowShader;
+	Shader m_solidShadowShader;
 	struct {
 		int lightMVP;
-	} m_branchesShadowUniforms;
+	} m_solidShadowUniforms;
 
 	Shader m_leavesShadowShader;
 	struct {

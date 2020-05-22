@@ -20,6 +20,8 @@ void main()
 	sinPos.x += sin(timeAdjusted * 5 + (l_pos.z + l_pos.y) / 2) / 20;
 	sinPos.z += sin(timeAdjusted * 5 + (l_pos.x + l_pos.y) / 2) / 20;
 
+	gl_ClipDistance[0] = dot( vec4(sinPos,1.0), vec4(0.0,1.0,0.0,-2.0));
+
 	v_pos = (view * vec4(sinPos, 1.0)).xyz;
 
     gl_Position = projection * vec4(v_pos, 1.0);

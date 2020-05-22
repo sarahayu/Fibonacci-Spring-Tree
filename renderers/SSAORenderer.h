@@ -2,7 +2,7 @@
 #include "FBO.h"
 #include "Shader.h"
 
-class TreeRenderable;
+class Model;
 struct RenderSettings;
 class Camera;
 
@@ -16,7 +16,7 @@ public:
 
 	void bindSSAOTexture() const;
 
-	void draw(TreeRenderable &treeRenderable, const Camera &camera, const RenderSettings &settings);
+	void draw(Model &scene, const Camera &camera, const RenderSettings &settings);
 
 private:
 
@@ -31,8 +31,8 @@ private:
 		unsigned int view,
 			invView,
 			projection;
-	} m_branchesUniforms;
-	Shader m_branchesGeomShader;
+	} m_solidUniforms;
+	Shader m_solidGeomShader;
 	struct {
 		unsigned int view,
 			invView,
@@ -43,7 +43,8 @@ private:
 	struct {
 		unsigned int samples,
 			projection,
-			windowSize;
+			windowSize,
+			radius;
 	} m_ssaoUniforms;
 	Shader m_ssaoShader;
 	Shader m_blurShader;

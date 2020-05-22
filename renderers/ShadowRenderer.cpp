@@ -3,21 +3,21 @@
 #include "..\RenderSettings.h"
 #include "..\Camera.h"
 #include "..\utils\GlobalClock.h"
-#include "TreeRenderable.h"
+#include "Model.h"
 #include "Mesh.h"
 
 void ShadowRenderer::loadResources()
 {
-	m_branchesShadowShader.loadFromFile("branches-shadow-shader", "shadow-shader");
-	m_branchesShadowShader.use();
-	m_branchesShadowUniforms.lightMVP = m_branchesShadowShader.getLocation("lightMVP");
+	m_solidShadowShader.loadFromFile("solid-shadow-shader", "shadow-shader");
+	m_solidShadowShader.use();
+	m_solidShadowUniforms.lightMVP = m_solidShadowShader.getLocation("lightMVP");
 
 	m_leavesShadowShader.loadFromFile("leaves-shadow-shader", "shadow-shader");
 	m_leavesShadowShader.use();
 	m_leavesShadowUniforms.lightMVP = m_leavesShadowShader.getLocation("lightMVP");
 	m_leavesShadowUniforms.time = m_leavesShadowShader.getLocation("time");
 
-	m_depthBuffer.rebuild({ 1024,1024 });
+	m_depthBuffer.rebuild({ 2048,2048 });
 	m_depthBuffer.attachDepthTexture();
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
@@ -39,33 +39,37 @@ const glm::mat4 ShadowRenderer::getLightMVP() const
 	return m_lightMVP;
 }
 
-void ShadowRenderer::draw(TreeRenderable & treeRenderable, const Camera & camera, const RenderSettings & settings)
+void ShadowRenderer::draw(Model & scene, const Camera & camera, const RenderSettings & settings)
 {
+	glDisable(GL_CLIP_DISTANCE0);
 	m_lightMVP = calculateLightMVP(settings.sunPos);
 
-	glViewport(0, 0, 1024, 1024);
+	glViewport(0, 0, 2048, 2048);
 	m_depthBuffer.bindAndClear();
 
-	treeRenderable.setShadowInfo(m_depthBuffer.getTextureID(GL_DEPTH_ATTACHMENT), m_lightMVP);
+	scene.setShadowInfo(m_depthBuffer.getTextureID(GL_DEPTH_ATTACHMENT), m_lightMVP);
 
-	m_branchesShadowShader.use();
-	m_branchesShadowShader.setMat4(m_branchesShadowUniforms.lightMVP, m_lightMVP);
+	m_solidShadowShader.use();
+	m_solidShadowShader.setMat4(m_solidShadowUniforms.lightMVP, m_lightMVP);
 
-	treeRenderable.drawBranches();
+	glDisable(GL_CULL_FACE);
+	scene.renderBasic(Model::SOLID_MESH, true);
 
 	m_leavesShadowShader.use();
 	m_leavesShadowShader.setMat4(m_leavesShadowUniforms.lightMVP, m_lightMVP);
 	m_leavesShadowShader.setFloat(m_leavesShadowUniforms.time, GlobalClock::getClock().getElapsedTime().asSeconds());
 
-	treeRenderable.drawLeaves();
+	scene.renderBasic(Model::LEAVES_MESH, true);
 
+	glEnable(GL_CULL_FACE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 const glm::mat4 ShadowRenderer::calculateLightMVP(const glm::vec3 sunPosition)
 {
-	glm::mat4 lightOrtho = glm::ortho(-40.f, 40.f, -40.f, 40.f, 1.f, 200.f);
-	glm::mat4 lightView = glm::lookAt(sunPosition * 40.f, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
+	const float size = 30.f;
+	glm::mat4 lightOrtho = glm::ortho(-size, size, -size, size, 1.f, 300.f);
+	glm::mat4 lightView = glm::lookAt(sunPosition * 100.f, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
 
 	return lightOrtho * lightView;
 }

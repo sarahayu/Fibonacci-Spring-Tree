@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <array>
 #include <glm\glm.hpp>
 
 struct TexParams
@@ -21,5 +22,6 @@ namespace ShaderUtil
 {
 	void linkShader(unsigned int &ID, const std::string &vertexFile, const std::string &fragmentFile = "");
 	void loadTexture(unsigned int &texture, const std::string &file, const TexParams &params = TexParams());
+	void loadCubeTexture(unsigned int &texture, const std::array<std::string, 6> &faces, const TexParams &params = TexParams());
 	void createTexture(unsigned int &texture, const glm::vec2 &size, const TexParams &params = TexParams(), const void *pixels = nullptr);
 };

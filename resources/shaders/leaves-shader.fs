@@ -26,7 +26,7 @@ float getShadow(vec3 position, vec3 lightDir)
 	projCoords = projCoords * 0.5 + vec3(0.5);
 	if (projCoords.z > 1.0) return 0.0;
 	float posDepth = projCoords.z;
-	float bias = max(0.005, 0.05 * (1.0 - dot(v_normal, lightDir)));
+	float bias = max(0.001, 0.005 * (1.0 - dot(v_normal, lightDir)));
 
 	float shadow = 0.0;
 	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
@@ -44,12 +44,20 @@ vec3 getLighting()
 {
 	if (!useLighting) return vec3(1.0);
     float ambientStrength = useSSAO ? texture(ssaoTexture, gl_FragCoord.xy / textureSize(ssaoTexture, 0)).r : 1.0;
-    vec3 ambient = lightColor * 0.3 * ambientStrength;
+    vec3 ambient = lightColor * 0.4 * ambientStrength;
 	vec3 normal = normalize(v_normal);
 	vec3 lightDir = normalize(lightSource);
-	vec3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor * 0.9;
+
+	float opaque = 1.0;
+	if (!gl_FrontFacing) normal.xz = -normal.xz;	
+	if (dot(normal, lightDir) < 0.0)
+	{
+		normal.xz = -normal.xz;
+		opaque = 0.2;
+	}
+
+	vec3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor * 0.9 * opaque;
 	float shadow = useShadows ? (1.0 - getShadow(v_pos, lightDir)) : 1.0;
-	if (!gl_FrontFacing) diffuse *= 0.2;
 
 	return ambient + diffuse * shadow;
 }

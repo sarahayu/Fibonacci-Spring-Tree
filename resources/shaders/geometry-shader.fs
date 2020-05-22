@@ -13,5 +13,5 @@ void main()
 	if (texture(tex, v_texCoord).a < 0.1) discard;
     Position = vec4(v_pos, 1.0);
     Normal = vec4(normalize(v_normal), 1.0);
-	if (!gl_FrontFacing) Normal.xz = -Normal.xz;
+	//if (!gl_FrontFacing) Normal.xz = -Normal.xz;
 }  

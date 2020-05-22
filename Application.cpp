@@ -18,9 +18,9 @@ Application::Application()
 	ImGui::SFML::Init(m_window);
 	setDefaults();
 
-	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT });
+	m_treeRenderer.loadResources({ SCR_WIDTH, SCR_HEIGHT }, m_input);
 	m_tree.createNewTree(m_input);
-	m_treeRenderer.createDrawable(m_tree, m_input);
+	m_treeRenderer.createTreeMesh(m_tree, m_input);
 }
 
 Application::~Application()
@@ -70,12 +70,17 @@ void Application::setDefaults()
 	m_input.leafDensity = 4.3f;
 	m_input.sunAzimuth = 0.f;
 	m_input.depthOfField = 0.12f;
+	m_input.ssaoRadius = 0.5f;
 	m_input.autoRotate = false;
 	m_input.multisampling = false;
 	m_input.useShadows = true;
 	m_input.useSSAO = true;
 	m_input.useLighting = true;
+	m_input.hideGUI = false;
+	m_input.sunPos = MathUtil::getSunPos(m_input.sunAzimuth);
 	m_input.sceneRotate = { 0.f,10.f,70.f };
+	m_input.trueSunAzimuth = 0.f;
+	m_input.renderBackground = true;
 }
 
 void Application::input(const float & deltatime)
@@ -103,78 +108,94 @@ void Application::input(const float & deltatime)
 			m_input.sceneRotate.z += evnt.mouseWheelScroll.delta;
 			m_input.sceneRotate.z = std::max(m_input.sceneRotate.z, 0.f);
 			break;
+		case sf::Event::KeyReleased:
+			switch (evnt.key.code)
+			{
+			case sf::Keyboard::M:
+				m_input.lines = !m_input.lines;
+				break;
+			case sf::Keyboard::F1:
+				m_input.hideGUI = !m_input.hideGUI;
+				break;
+			}
+			break;
 		}
 	}
 
 	sf::Vector2i currentPos = sf::Mouse::getPosition(m_window);
 	bool mouseWithin = false;
 
-	ImGui::Begin("Realtime tweaks", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
-
-	static bool modified;
-
-	modified |= ImGui::SliderAngle("Branch Off Angle", &m_input.angle, 0.f, 359.f);
-	modified |= ImGui::SliderFloat("Branch Off Angle Decrease", &m_input.angleDecreaseFactor, 0.01f, 0.99f);
-	modified |= ImGui::SliderAngle("Straight Growth Angle", &m_input.displacementAngle, 0.f);
-	modified |= ImGui::SliderFloat("Branch Length", &m_input.length, 0.1f, 10.f, "%.3f", 2.f);
-	modified |= ImGui::SliderFloat("Branch Length Decrease", &m_input.lengthDecreaseFactor, 0.01f, 0.99f);
-	modified |= ImGui::SliderFloat("Sun Reach", &m_input.sunReach, 0.f, 0.9f);
-
-	if (modified)
-		m_tree.updateExistingTree(m_input);
-
-	if (ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.8f, 1.f)
-		|| modified)
-		m_treeRenderer.updateBranchesDrawable(m_tree, m_input);
-
-	ImGui::SliderFloat("Rotate", &m_input.rotate, -10.f, 10.f);
-
-	if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 7.f)
-		|| modified)
-		m_treeRenderer.updateLeavesDrawable(m_tree, m_input);
-
-	modified = false;
-
-	ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
-	ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
-	ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
-	ImGui::Checkbox("Multisampling", &m_input.multisampling);
-	ImGui::SameLine(); ImGui::Checkbox("Use Shadows", &m_input.useShadows);
-	ImGui::SameLine(); ImGui::Checkbox("Use SSAO", &m_input.useSSAO);
-	ImGui::SameLine(); ImGui::Checkbox("Use Lighting", &m_input.useLighting);
-	if (ImGui::Button("Reset Defaults"))
+	if (!m_input.hideGUI)
 	{
-		setDefaults();
-		modified |= true;
+		ImGui::Begin("Realtime tweaks", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
+
+		static bool modified;
+
+		modified |= ImGui::SliderAngle("Branch Off Angle", &m_input.angle, 0.f, 359.f);
+		modified |= ImGui::SliderFloat("Branch Off Angle Decrease", &m_input.angleDecreaseFactor, 0.01f, 0.99f);
+		modified |= ImGui::SliderAngle("Straight Growth Angle", &m_input.displacementAngle, 0.f);
+		modified |= ImGui::SliderFloat("Branch Length", &m_input.length, 0.1f, 10.f, "%.3f", 2.f);
+		modified |= ImGui::SliderFloat("Branch Length Decrease", &m_input.lengthDecreaseFactor, 0.01f, 0.99f);
+		modified |= ImGui::SliderFloat("Sun Reach", &m_input.sunReach, 0.f, 0.9f);
+
+		if (modified)
+			m_tree.updateExistingTree(m_input);
+
+		if (ImGui::SliderFloat("Branch Taper", &m_input.branchTaper, 0.8f, 1.f)
+			|| modified)
+			m_treeRenderer.updateBranchesMesh(m_tree, m_input);
+
+		ImGui::SliderFloat("Rotate", &m_input.rotate, -10.f, 10.f);
+
+		if (ImGui::SliderFloat("Leaf Density", &m_input.leafDensity, 0.1f, 7.f)
+			|| modified)
+			m_treeRenderer.updateLeavesMesh(m_tree, m_input);
+
+		modified = false;
+
+		ImGui::SliderFloat("Sun angle", &m_input.sunAzimuth, -10.f, 10.f);
+		ImGui::SliderFloat("Depth of Field Aperture", &m_input.depthOfField, 0.f, 1.f);
+		ImGui::SliderFloat("SSAO Radius", &m_input.ssaoRadius, 0.3f, 20.f);
+		ImGui::Checkbox("Auto-Rotate", &m_input.autoRotate);
+		ImGui::Checkbox("Multisampling", &m_input.multisampling);
+		ImGui::SameLine(); ImGui::Checkbox("Use Shadows", &m_input.useShadows);
+		ImGui::SameLine(); ImGui::Checkbox("Use SSAO", &m_input.useSSAO);
+		ImGui::SameLine(); ImGui::Checkbox("Use Lighting", &m_input.useLighting);
+		ImGui::Checkbox("Render Background", &m_input.renderBackground);
+		if (ImGui::Button("Reset Defaults"))
+		{
+			setDefaults();
+			modified |= true;
+		}
+
+		namespace mu = MathUtil;
+
+		sf::Vector2f winPos = ImGui::GetWindowPos();
+		sf::Vector2f winSize = ImGui::GetWindowSize();
+		mouseWithin |= sf::FloatRect(winPos, winSize).contains(sf::Vector2f(currentPos));
+
+		ImVec2 nextWindowPos(winPos.x, winPos.y + winSize.y);
+
+		ImGui::End();
+
+		ImGui::SetNextWindowPos(nextWindowPos);
+
+		ImGui::Begin("Generate new tree", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
+
+		ImGui::InputInt("Fibonacci Offset", &m_input.fibStart);
+		ImGui::InputInt("Fibonacci Iterations", &m_input.iterations);
+		if (ImGui::Button("Generate!"))
+		{
+			m_tree.createNewTree(m_input);
+			m_treeRenderer.createTreeMesh(m_tree, m_input);
+		}
+
+		winPos = ImGui::GetWindowPos();
+		winSize = ImGui::GetWindowSize();
+		mouseWithin |= sf::FloatRect(winPos, winSize).contains(sf::Vector2f(currentPos));
+
+		ImGui::End();
 	}
-
-	namespace mu = MathUtil;
-
-	sf::Vector2f winPos = ImGui::GetWindowPos();
-	sf::Vector2f winSize = ImGui::GetWindowSize();
-	mouseWithin |= sf::FloatRect(winPos, winSize).contains(sf::Vector2f(currentPos));
-
-	ImVec2 nextWindowPos(winPos.x, winPos.y + winSize.y);
-
-	ImGui::End();
-
-	ImGui::SetNextWindowPos(nextWindowPos);
-
-	ImGui::Begin("Generate new tree", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
-
-	ImGui::InputInt("Fibonacci Offset", &m_input.fibStart);
-	ImGui::InputInt("Fibonacci Iterations", &m_input.iterations);
-	if (ImGui::Button("Generate!"))
-	{
-		m_tree.createNewTree(m_input);
-		m_treeRenderer.createDrawable(m_tree, m_input);
-	}
-
-	winPos = ImGui::GetWindowPos();
-	winSize = ImGui::GetWindowSize();
-	mouseWithin |= sf::FloatRect(winPos, winSize).contains(sf::Vector2f(currentPos));
-
-	ImGui::End();
 
 	static sf::Vector2i lastMousePos = sf::Mouse::getPosition(m_window);
 
@@ -183,6 +204,7 @@ void Application::input(const float & deltatime)
 		sf::Vector2f rotate(currentPos - lastMousePos);
 		m_input.sceneRotate += glm::vec3(rotate.x, rotate.y, 0.f) * 0.1f;
 	}
+
 	//m_input.sceneRotate.y = std::min(PI / 2 - 0.1f, std::max(m_input.sceneRotate.y, 0.f));
 
 	lastMousePos = currentPos;
@@ -191,21 +213,21 @@ void Application::input(const float & deltatime)
 void Application::update(const float & deltatime)
 {
 	float theta = m_input.sceneRotate.x + m_input.rotate;
-	float azimuth = m_input.sunAzimuth;
+	m_input.trueSunAzimuth = m_input.sunAzimuth;
 	if (m_input.autoRotate)
 	{
 		theta += m_clock.getElapsedTime().asSeconds() / 10;
-		azimuth += m_clock.getElapsedTime().asSeconds() / 5;
+		m_input.trueSunAzimuth += m_clock.getElapsedTime().asSeconds() / 5;
 	}
 	//float cosY = std::cos(m_input.sceneRotate.y);
 	float radius = m_input.sceneRotate.z;
-	m_camera.setPos({ radius * std::cos(theta), 20.f, radius * std::sin(theta) });
-	m_camera.setFocusPos({ 0.f, m_input.sceneRotate.y, 0.f });
+	m_camera.setPos({ radius * std::cos(theta), m_input.sceneRotate.y, radius * std::sin(theta) });
+	m_camera.setFocusPos({ 0.f, 20.f, 0.f });
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 300.f);
-	projection = glm::translate(projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
+	//projection = glm::translate(projection, { -10.f/*(float)SCR_HEIGHT / 2 - (float)SCR_WIDTH / 2*/,0.f,0.f });
 	m_camera.setProjection(projection);
 
-	m_input.sunPos = MathUtil::getSunPos(azimuth);
+	m_input.sunPos = MathUtil::getSunPos(m_input.trueSunAzimuth);
 }
 
 void Application::draw()
@@ -223,7 +245,7 @@ void Application::draw()
 	m_window.pushGLStates();
 	m_window.resetGLStates();
 
-	m_fps.draw(m_window);
+	if (!m_input.hideGUI) m_fps.draw(m_window);
 	ImGui::SFML::Render();
 
 	m_window.popGLStates();
@@ -246,11 +268,7 @@ void Application::initWindowOpenGL()
 	if (!gladLoadGL()) exit(-1);
 
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_MULTISAMPLE);
-
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }
