@@ -30,7 +30,7 @@ void LandRenderable::createMesh()
 			const float X = -width / 2 + x * cellWidth,
 				Z = -width / 2 + z * cellWidth;
 			const float distance = std::sqrt(X*X + Z*Z);
-			const float hillFactor = std::min(std::min(std::pow(distance / 85, 5), -std::pow(distance / 100, 4) + 1.f), 1.f);
+			const float hillFactor = std::max(std::min(std::min(std::pow(distance / 85, 5), -std::pow(distance / 100, 4) + 1.f), 1.f), 0.f);
 			const float Y = ((noise.fractal(3, X / 50 + rand, Z / 50 - rand) / 2 + 0.5f) * 30 + 10) * hillFactor;
 			heightMap[z * cellsPlusOne + x] = { X, Y, Z };
 		}

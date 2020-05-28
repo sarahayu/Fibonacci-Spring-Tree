@@ -10,10 +10,10 @@ WaterRenderable::WaterRenderable(const RenderSettings & settings)
 void WaterRenderable::createMesh()
 {
 	m_water.vertices.insert(m_water.vertices.end(), {
-		{ -200.f,3.f,-200.f },
-		{ -200.f,3.f,200.f },
-		{ 200.f,3.f,200.f },
-		{ 200.f,3.f,-200.f }
+		{ -100.f,3.f,-100.f },
+		{ -100.f,3.f,100.f },
+		{ 100.f,3.f,100.f },
+		{ 100.f,3.f,-100.f }
 	});
 
 	m_water.indices.insert(m_water.indices.end(), {
