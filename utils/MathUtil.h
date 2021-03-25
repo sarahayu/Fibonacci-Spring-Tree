@@ -12,10 +12,21 @@ namespace MathUtil
 	const glm::vec3 getSunPos(const float &azimuth);
 	const float lerp(const float &a, const float &b, const float &f);
 
-	const glm::vec3 toGLM3(const sf::Vector3f &vec);
+	template <typename T>
+	const glm::vec3 toGLM3(const sf::Vector3<T> & vec);
 	const sf::Vector3f toSF3(const glm::vec3 &vec);
-	const glm::vec2 toGLM2(const sf::Vector2i &vec);
-	const glm::vec2 toGLM2(const sf::Vector2f &vec);
+	template <typename T>
+	const glm::vec2 toGLM2(const sf::Vector2<T> & vec);
 	const sf::Vector2f toSF2(const glm::vec2 &vec);
-	const sf::Vector2f toSF2(const ImVec2 &vec);
+
+	template<typename T>
+	const glm::vec3 toGLM3(const sf::Vector3<T>& vec)
+	{
+		return{ vec.x, vec.y, vec.z };
+	}
+	template<typename T>
+	const glm::vec2 toGLM2(const sf::Vector2<T>& vec)
+	{
+		return{ vec.x, vec.y };
+	}
 }
